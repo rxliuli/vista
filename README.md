@@ -1,0 +1,160 @@
+# @rxliuli/vista
+
+[![npm version](https://badge.fury.io/js/@rxliuli%2Fvista.svg)](https://www.npmjs.com/package/@rxliuli/vista)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+A powerful homogeneous request interception library that supports unified interception of Fetch/XHR requests. It allows you to intervene at different stages of the request lifecycle, enabling various functions such as request monitoring, modification, and mocking.
+
+## Characteristics
+
+- 🚀 Supports both Fetch and XHR request interception
+- 🎯 Use middleware pattern, flexible and easy to expand
+- 💫 Support interventions before and after requests
+- 🔄 Modifiable request and response data
+- 📦 Zero dependency, compact size
+- 🌐 Supports browser environment only
+
+## Installation
+
+```bash
+npm install @rxliuli/vista
+# Or
+yarn add @rxliuli/vista
+# Or
+pnpm add @rxliuli/vista
+```
+
+## Basic Usage
+
+```ts
+import { Vista } from '@rxliuli/vista'
+
+new Vista()
+  .use(async (c, next) => {
+    console.log('Request started:', c.req.url)
+    await next()
+  })
+  .use(async (c, next) => {
+    await next()
+    console.log('Response data:', await c.res.clone().text())
+  })
+  .intercept()
+```
+
+## Advanced Use Cases
+
+### Add global request headers
+
+```ts
+new Vista()
+  .use(async (c, next) => {
+    c.req.headers.set('Authorization', 'Bearer token')
+    await next()
+  })
+  .intercept()
+```
+
+### Request Result Cache
+
+```ts
+const cache = new Map()
+
+new Vista()
+  .use(async (c, next) => {
+    const key = c.req.url
+    if (cache.has(key)) {
+      c.res = cache.get(key).clone()
+      return
+    }
+    await next()
+    cache.set(key, c.res.clone())
+  })
+  .intercept()
+```
+
+### Request failed, please retry
+
+```ts
+new Vista()
+  .use(async (c, next) => {
+    const maxRetries = 3
+    let retries = 0
+
+    while (retries < maxRetries) {
+      try {
+        await next()
+        break
+      } catch (err) {
+        retries++
+        if (retries === maxRetries) throw err
+      }
+    }
+  })
+  .intercept()
+```
+
+### Dynamic modify response
+
+```ts
+new Vista()
+  .use(async (c, next) => {
+    await next()
+    if (c.req.url === 'https://example.com/example') {
+      const json = await c.res.json()
+      json.id = 2
+      c.res = new Response(JSON.stringify(json), c.res)
+    }
+  })
+  .intercept()
+```
+
+## API Reference
+
+### Vista Class
+
+Main interceptor class, providing the following methods:
+
+- `use(middleware)`: Add middleware
+- `intercept()`: Start intercepting requests
+- `destroy()`: Stop intercepting requests
+
+### Middleware Context
+
+The middleware function receives two parameters:
+
+- `context`: Contains request and response information
+  - `req`: Request object
+    `res`: Response object
+  - `type`: Request type, `fetch` or `xhr`
+- `next`: Call the function of the next middleware or original request
+
+## FAQ
+
+1. **How to stop interception?**
+
+   ```ts
+   const vista = new Vista()
+   vista.intercept()
+   // When not needed
+   vista.destroy()
+   ```
+
+2. **Does it support asynchronous operations?**
+   Yes, the middleware supports async/await syntax.
+
+3. **Does it support intercepting requests in Node.js?**
+
+   No, it only supports intercepting requests in the browser.
+
+## Thank you
+
+- [xhook](https://github.com/jpillora/xhook): A library that implements xhr interception, helpful for the implementation of some features.
+- [hono](https://github.com/honojs/hono): An excellent web server framework that provides a lot of inspiration in its API.
+
+## Contribution Guidelines
+
+Welcome to submit Issues and Pull Requests!
+
+## License
+
+[MIT License](./LICENSE)
