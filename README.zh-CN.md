@@ -13,6 +13,7 @@
 - 🔄 可修改请求和响应数据
 - 📦 零依赖，体积小巧
 - 🌐 仅支持浏览器环境
+- 🔄 可修改流式响应
 
 ## 安装
 
@@ -102,6 +103,36 @@ new Vista()
       const json = await c.res.json()
       json.id = 2
       c.res = new Response(JSON.stringify(json), c.res)
+    }
+  })
+  .intercept()
+```
+
+### 修改流式响应
+
+```ts
+new Vista()
+  .use(async (c, next) => {
+    await next()
+    if (
+      c.res.headers.get('Content-Type') === 'text/event-stream' &&
+      c.res.body
+    ) {
+      c.res = new Response(
+        new ReadableStream({
+          async start(controller) {
+            const reader = c.res.body!.getReader()
+            let chunk = await reader.read()
+            while (!chunk.done) {
+              controller.enqueue(chunk.value)
+              controller.enqueue(chunk.value)
+              chunk = await reader.read()
+            }
+            controller.close()
+          },
+        }),
+        c.res,
+      )
     }
   })
   .intercept()

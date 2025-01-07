@@ -13,6 +13,7 @@ A powerful homogeneous request interception library that supports unified interc
 - 🔄 Modifiable request and response data
 - 📦 Zero dependency, compact size
 - 🌐 Supports browser environment only
+- 🔄 Modifiable stream response
 
 ## Installation
 
@@ -103,6 +104,37 @@ new Vista()
       const json = await c.res.json()
       json.id = 2
       c.res = new Response(JSON.stringify(json), c.res)
+    }
+  })
+  .intercept()
+```
+
+### Modify stream response
+
+```ts
+new Vista()
+  .use(async (c, next) => {
+    await next()
+    if (
+      c.res.headers.get('Content-Type') === 'text/event-stream' &&
+      c.res.body
+    ) {
+      c.res = new Response(
+        new ReadableStream({
+          async start(controller) {
+            const reader = c.res.body!.getReader()
+            let chunk = await reader.read()
+            while (!chunk.done) {
+              // send two chunk to client
+              controller.enqueue(chunk.value)
+              controller.enqueue(chunk.value)
+              chunk = await reader.read()
+            }
+            controller.close()
+          },
+        }),
+        c.res,
+      )
     }
   })
   .intercept()

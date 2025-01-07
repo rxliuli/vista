@@ -3,10 +3,6 @@ import { HTTPException } from '../http-exception'
 import { Middleware } from '../types'
 
 export class CustomXHR extends globalThis.XMLHttpRequest {
-  constructor() {
-    super()
-  }
-
   #method: string = ''
   #url: string | URL = ''
   #async?: boolean
