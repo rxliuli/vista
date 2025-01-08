@@ -55,6 +55,18 @@ new Vista()
   .intercept()
 ```
 
+### 修改请求 URL
+
+```ts
+new Vista()
+  .use(async (c, next) => {
+    const newUrl = 'https://example.com/new-url'
+    c.req = new Request(newUrl + '?url=' + c.req.url, c.req)
+    await next()
+  })
+  .intercept()
+```
+
 ### 请求结果缓存
 
 ```ts
