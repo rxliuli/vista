@@ -26,14 +26,16 @@ export default defineWorkspace([
       exclude: ['src/**/*.test.ts'],
       name: 'browser',
       browser: {
-        enabled: true,
-        name: 'chromium',
         provider: 'playwright',
+        enabled: true,
+        instances: [
+          { browser: 'chromium' },
+          // { browser: 'firefox' },
+          // { browser: 'webkit' },
+        ],
         headless: true,
-        // https://playwright.dev
-        providerOptions: {},
       },
-      globalSetup: './src/setup.ts',
+      globalSetup: ['./src/setup.ts'],
     },
   },
 ])

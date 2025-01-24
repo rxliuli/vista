@@ -33,13 +33,13 @@
   "sideEffects": false,
   "devDependencies": {
     "@hono/node-server": "^1.13.7",
-    "@vitest/browser": "^2.1.8",
-    "hono": "^4.6.15",
-    "playwright": "^1.49.1",
+    "@vitest/browser": "^3.0.4",
+    "hono": "^4.6.18",
+    "playwright": "^1.50.0",
     "tsup": "^8.3.5",
-    "typescript": "^5.7.2",
-    "vite-node": "^2.1.8",
-    "vitest": "^2.1.8"
+    "typescript": "^5.7.3",
+    "vite-node": "^3.0.4",
+    "vitest": "^3.0.4"
   },
   "publishConfig": {
     "access": "public",
