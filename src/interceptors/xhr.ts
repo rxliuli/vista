@@ -227,6 +227,10 @@ export class CustomXHR extends globalThis.XMLHttpRequest {
         ])
         if (c.req.body) {
           super.send.apply(this, [sendBody])
+        }
+        // body is undefined when the request in Firefox 🤡
+        else if (c.req === origin.req) {
+          super.send.apply(this, [this.#body])
         } else {
           super.send.apply(this)
         }

@@ -271,4 +271,15 @@ describe('interceptXHR', () => {
     expect(await f(5))
     unIntercept()
   })
+  it('send body', async () => {
+    const spy = vi.spyOn(XMLHttpRequest.prototype, 'send')
+    const unIntercept = interceptXHR(async (c, next) => {
+      await next()
+    })
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', 'https://jsonplaceholder.typicode.com/todos/1')
+    xhr.send('test')
+    expect(spy).toBeCalledWith('test')
+    unIntercept()
+  })
 })
