@@ -212,7 +212,7 @@ describe('interceptXHR', () => {
     expect(xhr.responseType).toBe('text')
     unIntercept()
   })
-  it('handle sse', async () => {
+  describe('sse', () => {
     const f = (count: number): Promise<string[]> => {
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest()
@@ -222,7 +222,7 @@ describe('interceptXHR', () => {
         xhr.onprogress = () => {
           const newData = xhr.responseText
           if (newData) {
-            chunks = xhr.responseText.split('\n\n').filter((it) => it.trim())
+            chunks = newData.split('\n\n').filter((it) => it.trim())
           }
         }
         xhr.onload = function () {
@@ -244,32 +244,58 @@ describe('interceptXHR', () => {
         xhr.send()
       })
     }
-    expect(await f(5)).length(5)
-    const unIntercept = interceptXHR(async (c, next) => {
-      await next()
-      if (
-        c.res.headers.get('Content-Type') === 'text/event-stream' &&
-        c.res.body
-      ) {
-        c.res = new Response(
-          new ReadableStream({
-            async start(controller) {
-              const reader = c.res.body!.getReader()
-              let chunk = await reader.read()
-              while (!chunk.done) {
-                controller.enqueue(chunk.value)
-                controller.enqueue(chunk.value)
-                chunk = await reader.read()
-              }
-              controller.close()
-            },
-          }),
-          c.res,
-        )
-      }
+    it('modify sse response', async () => {
+      expect(await f(5)).length(5)
+      const unIntercept = interceptXHR(async (c, next) => {
+        await next()
+        if (
+          c.res.headers.get('Content-Type') === 'text/event-stream' &&
+          c.res.body
+        ) {
+          c.res = new Response(
+            new ReadableStream({
+              async start(controller) {
+                const reader = c.res.body!.getReader()
+                let chunk = await reader.read()
+                while (!chunk.done) {
+                  controller.enqueue(chunk.value)
+                  controller.enqueue(chunk.value)
+                  chunk = await reader.read()
+                }
+                controller.close()
+              },
+            }),
+            c.res,
+          )
+        }
+      })
+      expect(await f(5)).length(10)
+      unIntercept()
     })
-    expect(await f(5))
-    unIntercept()
+    it('read sse response', async () => {
+      expect(await f(5)).length(5)
+      const chunks: string[] = []
+      const unIntercept = interceptXHR(async (c, next) => {
+        await next()
+        const cloneResp = c.res.clone()
+        if (
+          cloneResp.headers.get('Content-Type') === 'text/event-stream' &&
+          cloneResp.body
+        ) {
+          const reader = cloneResp
+            .body!.pipeThrough(new TextDecoderStream())
+            .getReader()
+          let chunk = await reader.read()
+          while (!chunk.done) {
+            chunks.push(...chunk.value!.split('\n\n').filter((it) => it.trim()))
+            chunk = await reader.read()
+          }
+        }
+      })
+      expect(await f(5)).length(5)
+      expect(chunks).length(5)
+      unIntercept()
+    })
   })
   it('send body', async () => {
     const spy = vi.spyOn(XMLHttpRequest.prototype, 'send')

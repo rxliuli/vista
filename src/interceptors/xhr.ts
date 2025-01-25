@@ -89,6 +89,9 @@ export class CustomXHR extends globalThis.XMLHttpRequest {
   set onerror(callback: (this: XMLHttpRequest, ev: ProgressEvent) => any) {
     this.#listeners.push(['error', callback, false])
   }
+  set onprogress(callback: (this: XMLHttpRequest, ev: ProgressEvent) => any) {
+    this.#listeners.push(['progress', callback, false])
+  }
 
   get status() {
     return this.#responseXHR?.status ?? super.status
@@ -107,7 +110,11 @@ export class CustomXHR extends globalThis.XMLHttpRequest {
   }
 
   get responseText() {
-    return this.#responseXHR?.responseText ?? super.responseText
+    return (
+      this.#responseXHR?.__responseText ??
+      this.#responseXHR?.responseText ??
+      super.responseText
+    )
   }
 
   get responseType() {
@@ -117,7 +124,9 @@ export class CustomXHR extends globalThis.XMLHttpRequest {
     super.responseType = value
   }
 
-  #responseXHR?: XMLHttpRequest
+  #responseXHR?: XMLHttpRequest & {
+    __responseText?: string
+  }
 
   async send(body?: Document | XMLHttpRequestBodyInit | null): Promise<void> {
     this.#body = body
@@ -178,6 +187,40 @@ export class CustomXHR extends globalThis.XMLHttpRequest {
     if (c.res !== origin.res) {
       this.#responseXHR = await responseToXHR(c.res, this.responseType)
     }
+    const progressCallbacks = this.#listeners.filter(
+      ([type]) => type === 'progress',
+    )
+    if (progressCallbacks.length > 0) {
+      if (
+        this.#responseXHR?.response instanceof ReadableStream &&
+        c.res.headers.get('Content-Type') === 'text/event-stream'
+      ) {
+        let responseText = ''
+        const reader = c.res.clone().body!.getReader()
+        let receivedLength = 0
+        let chunk = await reader.read()
+        while (!chunk.done) {
+          receivedLength += chunk.value.length
+          const textChunk = new TextDecoder().decode(chunk.value)
+          responseText += textChunk
+          const progressEvent = new ProgressEvent('progress', {
+            loaded: receivedLength,
+            lengthComputable: true,
+            total: parseInt(c.res.headers.get('Content-Length') || '0', 10),
+          })
+          this.#responseXHR.__responseText = responseText
+          progressCallbacks.forEach(([_type, listener, _options]) => {
+            listener.call(this, progressEvent)
+          })
+          chunk = await reader.read()
+        }
+      } else {
+        progressCallbacks.forEach(([_type, listener, _options]) => {
+          listener.call(this, new ProgressEvent('progress'))
+        })
+      }
+    }
+
     this.#listeners
       .filter(([type]) => type === 'load')
       .forEach(([_type, listener, _options]) => {
@@ -202,7 +245,7 @@ export class CustomXHR extends globalThis.XMLHttpRequest {
         super.setRequestHeader.apply(this, [name, value])
       })
       this.#listeners
-        .filter(([type]) => type !== 'load' && type !== 'error')
+        .filter(([type]) => !['load', 'error', 'progress'].includes(type))
         .forEach(([type, listener, options]) => {
           super.addEventListener.apply(this, [type, listener as any, options])
         })
@@ -261,28 +304,30 @@ async function responseToXHR(
 ) {
   const xhr = new XMLHttpRequest()
 
-  let responseValue
-  if (
-    ['text/event-stream', 'application/octet-stream'].includes(
-      response.headers.get('Content-Type') ?? '',
-    )
-  ) {
-    responseValue = response.body
+  let responseValue: typeof xhr.response
+  const cloneResp = response.clone()
+
+  const isStreaming = [
+    'text/event-stream',
+    'application/octet-stream',
+  ].includes(response.headers.get('Content-Type') ?? '')
+  if (isStreaming) {
+    responseValue = cloneResp.body
   } else {
     switch (responseType) {
       case 'json':
-        responseValue = await response.clone().json()
+        responseValue = await cloneResp.json()
         break
       case 'blob':
-        responseValue = await response.clone().blob()
+        responseValue = await cloneResp.blob()
         break
       case 'arraybuffer':
-        responseValue = await response.clone().arrayBuffer()
+        responseValue = await cloneResp.arrayBuffer()
         break
       case 'document':
       case 'text':
       default:
-        responseValue = await response.clone().text()
+        responseValue = await cloneResp.text()
     }
   }
 
@@ -295,7 +340,9 @@ async function responseToXHR(
     status: { value: response.status },
     statusText: { value: response.statusText },
     responseURL: { value: response.url },
-    readyState: { value: 4 },
+    readyState: {
+      value: isStreaming ? XMLHttpRequest.LOADING : XMLHttpRequest.DONE,
+    },
     response: { value: responseValue },
     responseType: { value: responseType },
     responseText: {
