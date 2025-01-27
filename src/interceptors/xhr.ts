@@ -321,6 +321,8 @@ function xhrToResponse(xhr: XMLHttpRequest) {
     body = null
   } else if (xhr.responseType === '' || xhr.responseType === 'text') {
     body = xhr.responseText
+  } else if (xhr.responseType === 'json') {
+    body = JSON.stringify(xhr.response)
   }
   return new Response(body, responseInit)
 }

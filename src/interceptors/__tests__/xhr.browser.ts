@@ -132,6 +132,15 @@ describe('interceptXHR', () => {
     }
     unIntercept()
   })
+  it.todo('handle error with next executed', async () => {
+    const unIntercept = interceptXHR(async (c, next) => {
+      await next()
+      throw new Error('test')
+    })
+    const xhr = request('http://localhost:3000/todos/1')
+    await expect(xhr).rejects.toThrow()
+    unIntercept()
+  })
   it('handle normal error', async () => {
     const unIntercept = interceptXHR(async (c, next) => {
       throw new Error('test')
@@ -265,7 +274,6 @@ describe('interceptXHR', () => {
     expect(spy).toBeCalledWith('test')
     unIntercept()
   })
-
   it('blocking request', async () => {
     const f = async () => {
       const start = Date.now()
@@ -303,6 +311,25 @@ describe('interceptXHR', () => {
       xhr.send()
     })
     expect(r).toEqual([1, 2])
+    unIntercept()
+  })
+  it('set responseType to json', async () => {
+    let json: any
+    const unIntercept = interceptXHR(async (c, next) => {
+      await next()
+      try {
+        json = await c.res.clone().json()
+      } catch {}
+    })
+    const xhr = new XMLHttpRequest()
+    xhr.open('GET', 'http://localhost:3000/todos/1')
+    xhr.responseType = 'json'
+    xhr.send()
+    await new Promise((resolve, reject) => {
+      xhr.onload = resolve
+      xhr.onerror = reject
+    })
+    expect(xhr.response).toEqual(json)
     unIntercept()
   })
 })
