@@ -92,6 +92,9 @@ export class CustomXHR extends globalThis.XMLHttpRequest {
   set onprogress(callback: (this: XMLHttpRequest, ev: ProgressEvent) => any) {
     this.#listeners.push(['progress', callback, false])
   }
+  set onreadystatechange(callback: (this: XMLHttpRequest, ev: Event) => any) {
+    this.#listeners.push(['readystatechange', callback, false])
+  }
 
   get status() {
     return this.#responseXHR?.status ?? super.status
@@ -222,9 +225,11 @@ export class CustomXHR extends globalThis.XMLHttpRequest {
     }
 
     this.#listeners
-      .filter(([type]) => type === 'load')
-      .forEach(([_type, listener, _options]) => {
-        listener.call(this, new ProgressEvent('load'))
+      .filter(([type]) =>
+        ['load', 'loadend', 'readystatechange'].includes(type),
+      )
+      .forEach(([type, listener, _options]) => {
+        listener.call(this, new ProgressEvent(type))
       })
   }
 
@@ -245,7 +250,16 @@ export class CustomXHR extends globalThis.XMLHttpRequest {
         super.setRequestHeader.apply(this, [name, value])
       })
       this.#listeners
-        .filter(([type]) => !['load', 'error', 'progress'].includes(type))
+        .filter(
+          ([type]) =>
+            ![
+              'load',
+              'loadend',
+              'readystatechange',
+              'error',
+              'progress',
+            ].includes(type),
+        )
         .forEach(([type, listener, options]) => {
           super.addEventListener.apply(this, [type, listener as any, options])
         })
@@ -266,6 +280,19 @@ export class CustomXHR extends globalThis.XMLHttpRequest {
           'error',
           (_ev) => {
             reject(new Error(this.status + ' ' + this.statusText))
+          },
+        ])
+        super.addEventListener.apply(this, [
+          'readystatechange',
+          (ev) => {
+            if (this.readyState === XMLHttpRequest.DONE) {
+              return
+            }
+            this.#listeners
+              .filter(([type]) => type === 'readystatechange')
+              .forEach(([_type, listener, _options]) => {
+                listener.call(this, ev as ProgressEvent)
+              })
           },
         ])
         if (c.req.body) {

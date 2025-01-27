@@ -7,6 +7,22 @@ beforeEach(() => {
 })
 
 describe('interceptXHR', () => {
+  async function request(
+    url: string,
+    options?: {
+      method?: string
+    },
+  ) {
+    return new Promise<XMLHttpRequest>((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open(options?.method || 'GET', url)
+      xhr.responseType = 'text'
+      xhr.onload = () => resolve(xhr)
+      xhr.onerror = () => reject(xhr)
+      xhr.send()
+    })
+  }
+
   it('should intercept XHR', async () => {
     const spy = vi.spyOn(XMLHttpRequest.prototype, 'open')
     const logger = vi.fn()
@@ -14,9 +30,7 @@ describe('interceptXHR', () => {
       logger(c.req.url)
       await next()
     })
-    const xhr = new XMLHttpRequest()
-    xhr.open('GET', 'https://jsonplaceholder.typicode.com/todos/1')
-    xhr.send()
+    await request('https://jsonplaceholder.typicode.com/todos/1')
     expect(logger.mock.calls[0][0]).toBe(
       'https://jsonplaceholder.typicode.com/todos/1',
     )
@@ -29,17 +43,8 @@ describe('interceptXHR', () => {
       c.req = new Request('https://jsonplaceholder.typicode.com/todos/2', c.req)
       await next()
     })
-    const xhr = new XMLHttpRequest()
-    xhr.open('GET', 'https://jsonplaceholder.typicode.com/todos/1')
-    const r = await new Promise<{ id: string }>((resolve, reject) => {
-      xhr.addEventListener('load', function () {
-        resolve(JSON.parse(this.responseText))
-      })
-      xhr.addEventListener('error', function () {
-        reject(this.responseText)
-      })
-      xhr.send()
-    })
+    const xhr = await request('https://jsonplaceholder.typicode.com/todos/1')
+    const r = JSON.parse(xhr.responseText)
     expect(r.id).toBe(2)
     expect(spy).toBeCalledTimes(1)
     unIntercept()
@@ -52,17 +57,8 @@ describe('interceptXHR', () => {
       json.id = 2
       c.res = new Response(JSON.stringify(json), c.res)
     })
-    const xhr = new XMLHttpRequest()
-    xhr.open('GET', 'https://jsonplaceholder.typicode.com/todos/1')
-    const r = await new Promise<{ id: string }>((resolve, reject) => {
-      xhr.addEventListener('load', function () {
-        resolve(JSON.parse(this.responseText))
-      })
-      xhr.addEventListener('error', function () {
-        reject(this.responseText)
-      })
-      xhr.send()
-    })
+    const xhr = await request('https://jsonplaceholder.typicode.com/todos/1')
+    const r = JSON.parse(xhr.responseText)
     expect(r.id).toBe(2)
     expect(spy).toBeCalledTimes(1)
     unIntercept()
@@ -72,18 +68,8 @@ describe('interceptXHR', () => {
     const unIntercept = interceptXHR(async (c, _next) => {
       c.res = new Response('test')
     })
-    const xhr = new XMLHttpRequest()
-    xhr.open('GET', 'https://jsonplaceholder.typicode.com/todos/1')
-    xhr.send()
-    const r = await new Promise<string>((resolve, reject) => {
-      xhr.addEventListener('load', function () {
-        resolve(this.responseText)
-      })
-      xhr.addEventListener('error', function () {
-        reject(this.responseText)
-      })
-      xhr.send()
-    })
+    const xhr = await request('https://jsonplaceholder.typicode.com/todos/1')
+    const r = xhr.responseText
     expect(r).toBe('test')
     expect(spy).toBeCalledTimes(0)
     unIntercept()
@@ -96,17 +82,8 @@ describe('interceptXHR', () => {
       json.id = 2
       c.res = new Response(JSON.stringify(json), c.res)
     })
-    const xhr = new XMLHttpRequest()
-    xhr.open('GET', 'https://jsonplaceholder.typicode.com/todos/1')
-    const r = await new Promise<{ id: string }>((resolve, reject) => {
-      xhr.onload = function () {
-        resolve(JSON.parse(this.responseText))
-      }
-      xhr.onerror = function () {
-        reject(this.responseText)
-      }
-      xhr.send()
-    })
+    const xhr = await request('https://jsonplaceholder.typicode.com/todos/1')
+    const r = JSON.parse(xhr.responseText)
     expect(r.id).toBe(2)
     expect(spy).toBeCalledTimes(1)
     unIntercept()
@@ -119,13 +96,8 @@ describe('interceptXHR', () => {
       json.id = 2
       c.res = new Response(JSON.stringify(json), c.res)
     })
-    const xhr = new XMLHttpRequest()
-    xhr.open('GET', 'https://jsonplaceholder.typicode.com/todos/1')
-    const r = await new Promise<{ id: string }>((resolve, reject) => {
-      xhr.onload = () => resolve(JSON.parse(xhr.responseText))
-      xhr.onerror = () => reject(xhr.responseText)
-      xhr.send()
-    })
+    const xhr = await request('https://jsonplaceholder.typicode.com/todos/1')
+    const r = JSON.parse(xhr.responseText)
     expect(r.id).toBe(2)
     expect(spy).toBeCalledTimes(1)
     unIntercept()
@@ -134,17 +106,14 @@ describe('interceptXHR', () => {
     const unIntercept = interceptXHR(async (c, next) => {
       throw 'test'
     })
-    const xhr = new XMLHttpRequest()
-    xhr.open('GET', 'https://jsonplaceholder.typicode.com/todos/1')
-    await expect(
-      new Promise((resolve, reject) => {
-        xhr.onload = () => resolve(xhr.responseText)
-        xhr.onerror = () => reject(xhr.responseText)
-        xhr.send()
-      }),
-    ).rejects.toThrow()
-    expect(xhr.status).toBe(500)
-    expect(xhr.responseText).toBe('test')
+    const xhr = request('https://jsonplaceholder.typicode.com/todos/1')
+    await expect(xhr).rejects.toThrow()
+    try {
+      await xhr
+    } catch (e: any) {
+      expect(e.status).toBe(500)
+      expect(e.responseText).toBe('test')
+    }
     unIntercept()
   })
   it('handle http error', async () => {
@@ -153,47 +122,35 @@ describe('interceptXHR', () => {
         message: 'test',
       })
     })
-    const xhr = new XMLHttpRequest()
-    xhr.open('GET', 'https://jsonplaceholder.typicode.com/todos/1')
-    await expect(
-      new Promise((resolve, reject) => {
-        xhr.onload = () => resolve(xhr.responseText)
-        xhr.onerror = () => reject(xhr.responseText)
-        xhr.send()
-      }),
-    ).rejects.toThrow()
-    expect(xhr.status).toBe(404)
-    expect(xhr.responseText).toBe('test')
+    const xhr = request('https://jsonplaceholder.typicode.com/todos/1')
+    await expect(xhr).rejects.toThrow()
+    try {
+      await xhr
+    } catch (e: any) {
+      expect(e.status).toBe(404)
+      expect(e.responseText).toBe('test')
+    }
     unIntercept()
   })
   it('handle normal error', async () => {
     const unIntercept = interceptXHR(async (c, next) => {
       throw new Error('test')
     })
-    const xhr = new XMLHttpRequest()
-    xhr.open('GET', 'https://jsonplaceholder.typicode.com/todos/1')
-    await expect(
-      new Promise((resolve, reject) => {
-        xhr.onload = () => resolve(xhr.responseText)
-        xhr.onerror = () => reject(xhr.responseText)
-        xhr.send()
-      }),
-    ).rejects.toThrow()
-    expect(xhr.status).toBe(500)
-    expect(xhr.responseText).toBe('test')
+    const xhr = request('https://jsonplaceholder.typicode.com/todos/1')
+    await expect(xhr).rejects.toThrow()
+    try {
+      await xhr
+    } catch (e: any) {
+      expect(e.status).toBe(500)
+      expect(e.responseText).toBe('test')
+    }
     unIntercept()
   })
   it('handle empty response', async () => {
     const unIntercept = interceptXHR(async (_c, next) => {
       await next()
     })
-    const xhr = new XMLHttpRequest()
-    xhr.open('GET', 'http://localhost:3000/empty')
-    await new Promise((resolve, reject) => {
-      xhr.onload = () => resolve(xhr.responseText)
-      xhr.onerror = () => reject(xhr.responseText)
-      xhr.send()
-    })
+    const xhr = await request('http://localhost:3000/empty')
     expect(xhr.status).toBe(204)
     unIntercept()
   })
@@ -306,6 +263,46 @@ describe('interceptXHR', () => {
     xhr.open('POST', 'https://jsonplaceholder.typicode.com/todos/1')
     xhr.send('test')
     expect(spy).toBeCalledWith('test')
+    unIntercept()
+  })
+
+  it('blocking request', async () => {
+    const f = async () => {
+      const start = Date.now()
+      await request('http://localhost:3000/todos/1')
+      return Date.now() - start
+    }
+    const r1 = await f()
+    const unIntercept = interceptXHR(async (c, next) => {
+      await next()
+      await new Promise((resolve) => setTimeout(resolve, 100))
+    })
+    const r2 = await f()
+    expect(r1).lt(100)
+    expect(r2).gt(100)
+    unIntercept()
+  })
+  it('blocking request of readystatechange', async () => {
+    const r: number[] = []
+    const unIntercept = interceptXHR(async (_c, next) => {
+      await next()
+      await new Promise((resolve) => setTimeout(resolve, 100))
+      r.push(1)
+    })
+    await new Promise<void>((resolve) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open('GET', 'http://localhost:3000/todos/1')
+      xhr.responseType = 'text'
+      xhr.onreadystatechange = () => {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+          r.push(2)
+          resolve()
+        }
+      }
+      // xhr.onload = resolve
+      xhr.send()
+    })
+    expect(r).toEqual([1, 2])
     unIntercept()
   })
 })
