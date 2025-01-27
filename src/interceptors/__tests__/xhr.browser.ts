@@ -11,12 +11,13 @@ describe('interceptXHR', () => {
     url: string,
     options?: {
       method?: string
+      responseType?: XMLHttpRequestResponseType
     },
   ) {
     return new Promise<XMLHttpRequest>((resolve, reject) => {
       const xhr = new XMLHttpRequest()
       xhr.open(options?.method || 'GET', url)
-      xhr.responseType = 'text'
+      xhr.responseType = options?.responseType ?? 'text'
       xhr.onload = () => resolve(xhr)
       xhr.onerror = () => reject(xhr)
       xhr.send()
@@ -116,7 +117,7 @@ describe('interceptXHR', () => {
     }
     unIntercept()
   })
-  it('handle http error', async () => {
+  it('handle http exception', async () => {
     const unIntercept = interceptXHR(async (c, next) => {
       throw new HTTPException(404, {
         message: 'test',
@@ -132,13 +133,26 @@ describe('interceptXHR', () => {
     }
     unIntercept()
   })
-  it.todo('handle error with next executed', async () => {
+  it('handle http exception with next after', async () => {
+    const xhr1 = await request('http://localhost:3000/todos/1', {
+      responseType: 'json',
+    })
+    expect(xhr1.response).toMatchObject({ id: 1 })
     const unIntercept = interceptXHR(async (c, next) => {
       await next()
-      throw new Error('test')
+      throw new HTTPException(400, {
+        message: 'test',
+      })
     })
-    const xhr = request('http://localhost:3000/todos/1')
-    await expect(xhr).rejects.toThrow()
+    const xhr2 = request('http://localhost:3000/todos/1')
+    await expect(xhr2).rejects.toThrow()
+    try {
+      await xhr2
+    } catch (err) {
+      const xhr = err as XMLHttpRequest
+      expect(xhr.responseText).toBe('test')
+      expect(xhr.status).toBe(400)
+    }
     unIntercept()
   })
   it('handle normal error', async () => {
@@ -317,17 +331,15 @@ describe('interceptXHR', () => {
     let json: any
     const unIntercept = interceptXHR(async (c, next) => {
       await next()
-      try {
-        json = await c.res.clone().json()
-      } catch {}
+      json = await c.res.clone().json()
     })
     const xhr = new XMLHttpRequest()
     xhr.open('GET', 'http://localhost:3000/todos/1')
     xhr.responseType = 'json'
-    xhr.send()
     await new Promise((resolve, reject) => {
       xhr.onload = resolve
       xhr.onerror = reject
+      xhr.send()
     })
     expect(xhr.response).toEqual(json)
     unIntercept()
