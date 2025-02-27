@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, inject, it, vi } from 'vitest'
 import { Vista } from '../../vista'
 import { timeout } from '.'
 
@@ -15,9 +15,9 @@ describe('timeout', () => {
   })
 
   it('fetch', async () => {
-    const r1 = await fetch('http://localhost:3000/wait')
+    const r1 = await fetch(`${inject('serverUrl')}/wait`)
     expect(r1.ok).true
-    const r2 = await fetch('http://localhost:3000/wait?timeout=1000')
+    const r2 = await fetch(`${inject('serverUrl')}/wait?timeout=1000`)
     expect(r2.ok).false
     expect(await r2.text()).toBe('Gateway Timeout')
   })
@@ -31,9 +31,9 @@ describe('timeout', () => {
         xhr.send()
       })
     }
-    expect(await fetchXHR('http://localhost:3000/wait')).toBe('ok')
+    expect(await fetchXHR(`${inject('serverUrl')}/wait`)).toBe('ok')
     await expect(
-      fetchXHR('http://localhost:3000/wait?timeout=1000'),
+      fetchXHR(`${inject('serverUrl')}/wait?timeout=1000`),
     ).rejects.toThrow()
   })
 })

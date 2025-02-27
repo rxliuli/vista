@@ -1,29 +1,23 @@
 import { defineWorkspace } from 'vitest/config'
 
-const browserIncludes = [
-  'src/**/*.browser.test.ts',
-  'src/**/*.browser.svelte.test.ts',
-  'src/**/__tests__/*.browser.ts',
-  'src/**/*.browser.ts',
-]
-
 export default defineWorkspace([
   {
     test: {
       // an example of file based convention,
       // you don't have to follow it
-      include: ['src/**/*.test.ts'],
-      exclude: browserIncludes,
+      include: ['src/**/*.test.ts', 'src/**/*.node.test.ts'],
+      exclude: ['src/**/*.browser.test.ts'],
       name: 'unit',
       environment: 'node',
+      globalSetup: ['./src/setup.ts'],
     },
   },
   {
     test: {
       // an example of file based convention,
       // you don't have to follow it
-      include: browserIncludes,
-      exclude: ['src/**/*.test.ts'],
+      include: ['src/**/*.test.ts', 'src/**/*.browser.test.ts'],
+      exclude: ['src/**/*.node.test.ts'],
       name: 'browser',
       browser: {
         provider: 'playwright',

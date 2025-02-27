@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, inject, it, vi } from 'vitest'
 import { prettyJSON } from '.'
 import { Vista } from '../../vista'
 
@@ -21,10 +21,10 @@ describe('pretty json', () => {
   })
 
   it('fetch', async () => {
-    const r1 = await (await fetch('http://localhost:3000/todos/1')).text()
+    const r1 = await (await fetch(`${inject('serverUrl')}/todos/1`)).text()
     expect(r1).toBe(JSON.stringify(expected))
     const r2 = await (
-      await fetch('http://localhost:3000/todos/1?pretty')
+      await fetch(`${inject('serverUrl')}/todos/1?pretty`)
     ).text()
     expect(r2).toBe(JSON.stringify(expected, null, 2))
   })
@@ -38,10 +38,10 @@ describe('pretty json', () => {
         xhr.send()
       })
     }
-    expect(await fetchXHR('http://localhost:3000/todos/1')).toBe(
+    expect(await fetchXHR(`${inject('serverUrl')}/todos/1`)).toBe(
       JSON.stringify(expected),
     )
-    expect(await fetchXHR('http://localhost:3000/todos/1?pretty')).toBe(
+    expect(await fetchXHR(`${inject('serverUrl')}/todos/1?pretty`)).toBe(
       JSON.stringify(expected, null, 2),
     )
   })

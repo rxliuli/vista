@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, inject, it, vi } from 'vitest'
 import { interceptXHR } from '../xhr'
 import { HTTPException } from '../../http-exception'
 
@@ -134,7 +134,7 @@ describe('interceptXHR', () => {
     unIntercept()
   })
   it('handle http exception with next after', async () => {
-    const xhr1 = await request('http://localhost:3000/todos/1', {
+    const xhr1 = await request(`${inject('serverUrl')}/todos/1`, {
       responseType: 'json',
     })
     expect(xhr1.response).toMatchObject({ id: 1 })
@@ -144,7 +144,7 @@ describe('interceptXHR', () => {
         message: 'test',
       })
     })
-    const xhr2 = request('http://localhost:3000/todos/1')
+    const xhr2 = request(`${inject('serverUrl')}/todos/1`)
     await expect(xhr2).rejects.toThrow()
     try {
       await xhr2
@@ -173,7 +173,7 @@ describe('interceptXHR', () => {
     const unIntercept = interceptXHR(async (_c, next) => {
       await next()
     })
-    const xhr = await request('http://localhost:3000/empty')
+    const xhr = await request(`${inject('serverUrl')}/empty`)
     expect(xhr.status).toBe(204)
     unIntercept()
   })
@@ -197,7 +197,7 @@ describe('interceptXHR', () => {
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest()
         let chunks: string[] = []
-        xhr.open('GET', `http://localhost:3000/sse?count=${count}`)
+        xhr.open('GET', `${inject('serverUrl')}/sse?count=${count}`)
         xhr.responseType = 'text'
         xhr.onprogress = () => {
           const newData = xhr.responseText
@@ -291,7 +291,7 @@ describe('interceptXHR', () => {
   it('blocking request', async () => {
     const f = async () => {
       const start = Date.now()
-      await request('http://localhost:3000/todos/1')
+      await request(`${inject('serverUrl')}/todos/1`)
       return Date.now() - start
     }
     const r1 = await f()
@@ -313,7 +313,7 @@ describe('interceptXHR', () => {
     })
     await new Promise<void>((resolve) => {
       const xhr = new XMLHttpRequest()
-      xhr.open('GET', 'http://localhost:3000/todos/1')
+      xhr.open('GET', `${inject('serverUrl')}/todos/1`)
       xhr.responseType = 'text'
       xhr.onreadystatechange = () => {
         if (xhr.readyState === XMLHttpRequest.DONE) {
@@ -334,7 +334,7 @@ describe('interceptXHR', () => {
       json = await c.res.clone().json()
     })
     const xhr = new XMLHttpRequest()
-    xhr.open('GET', 'http://localhost:3000/todos/1')
+    xhr.open('GET', `${inject('serverUrl')}/todos/1`)
     xhr.responseType = 'json'
     await new Promise((resolve, reject) => {
       xhr.onload = resolve

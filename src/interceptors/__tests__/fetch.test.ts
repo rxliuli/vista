@@ -1,4 +1,4 @@
-import { describe, it, vi, expect, beforeEach } from 'vitest'
+import { describe, it, vi, expect, beforeEach, inject } from 'vitest'
 import { interceptFetch } from '../fetch'
 import { HTTPException } from '../../http-exception'
 
@@ -99,13 +99,13 @@ describe('interceptFetch', () => {
     const unIntercept = interceptFetch(async (_c, next) => {
       await next()
     })
-    const r = await fetch('http://localhost:3000/empty')
+    const r = await fetch(`${inject('serverUrl')}/empty`)
     expect(r.status).toBe(204)
     unIntercept()
   })
   it('handle sse', async () => {
     const f = async (count: number) => {
-      const r = await fetch(`http://localhost:3000/sse?count=${count}`)
+      const r = await fetch(`${inject('serverUrl')}/sse?count=${count}`)
       expect(r.body).not.null
       const reader = r.body!.pipeThrough(new TextDecoderStream()).getReader()
       let chunk = await reader.read()

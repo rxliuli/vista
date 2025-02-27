@@ -12,7 +12,7 @@ A powerful homogeneous request interception library that supports unified interc
 - 💫 Support interventions before and after requests
 - 🔄 Modifiable request and response data
 - 📦 Zero dependency, compact size
-- 🌐 Supports browser environment only
+- 🌐 Supports browser/node environment
 - 🔄 Modifiable stream response
 
 ## Installation

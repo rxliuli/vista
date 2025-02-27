@@ -2,10 +2,19 @@ import { serve, ServerType } from '@hono/node-server'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { streamSSE } from 'hono/streaming'
+import { detectPort, waitPort } from 'detect-port'
+import type { TestProject } from 'vitest/node'
 
 let server: ServerType
 
-export async function setup() {
+declare module 'vitest' {
+  export interface ProvidedContext {
+    serverUrl: string
+  }
+}
+
+export async function setup(project: TestProject) {
+  const port = await detectPort(3000)
   const app = new Hono()
     .use(cors())
     .get('/todos/1', (c) =>
@@ -46,8 +55,9 @@ export async function setup() {
       })
     })
 
-  server = serve(app, (info) => {
-    console.log(`server listening on http://localhost:${info.port}`)
+  project.provide('serverUrl', `http://localhost:${port}`)
+  server = serve({ ...app, port }, (info) => {
+    // console.log(`server listening on http://localhost:${info.port}`)
   })
 }
 

@@ -3,7 +3,7 @@ import { Middleware } from './types'
 export interface Context {
   req: Request
   res: Response
-  type: 'fetch' | 'xhr'
+  type: 'fetch' | 'xhr' | 'request'
 
   [key: string]: any
 }
