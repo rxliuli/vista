@@ -143,4 +143,22 @@ describe('interceptFetch', () => {
     expect(await f(5)).length(10)
     unIntercept()
   })
+  it('interceptFetch should be executed in the order of the onion model', async () => {
+    const r: number[] = []
+    const unIntercept = interceptFetch(
+      async (_c, next) => {
+        r.push(1)
+        await next()
+        r.push(2)
+      },
+      async (_c, next) => {
+        r.push(3)
+        await next()
+        r.push(4)
+      },
+    )
+    await fetch(`${inject('serverUrl')}/todos/1`)
+    expect(r).toEqual([1, 3, 4, 2])
+    unIntercept()
+  })
 })

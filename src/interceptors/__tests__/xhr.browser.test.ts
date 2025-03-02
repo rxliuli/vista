@@ -344,4 +344,22 @@ describe('interceptXHR', () => {
     expect(xhr.response).toEqual(json)
     unIntercept()
   })
+  it('interceptXHR should be executed in the order of the onion model', async () => {
+    const r: number[] = []
+    const unIntercept = interceptXHR(
+      async (_c, next) => {
+        r.push(1)
+        await next()
+        r.push(2)
+      },
+      async (_c, next) => {
+        r.push(3)
+        await next()
+        r.push(4)
+      },
+    )
+    await request(`${inject('serverUrl')}/todos/1`)
+    expect(r).toEqual([1, 3, 4, 2])
+    unIntercept()
+  })
 })
