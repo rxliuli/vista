@@ -34,27 +34,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Check if NPM_TOKEN is available
-        run: |
-          if [ -z "${{ secrets.NPM_TOKEN }}" ]; then
-            echo "ERROR: NPM_TOKEN is empty or not available"
-            exit 1
-          else
-            echo "NPM_TOKEN is available and not empty"
-            echo "Token length: ${#NODE_AUTH_TOKEN}"
-          fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
       - name: Build
         run: |
           pnpm build
 
       - name: Publish to npm
         run: |
-          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
-          less .npmrc
-          npm whoami
           npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
