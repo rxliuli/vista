@@ -7,6 +7,10 @@ on:
 
   workflow_dispatch:
 
+permissions:
+  contents: write
+  id-token: write
+
 jobs:
   build-and-release:
     name: Build and Release
@@ -34,6 +38,7 @@ jobs:
           pnpm build
 
       - name: Publish to npm
-        run: pnpm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
+          npm whoami
+          npm publish --provenance --access public
