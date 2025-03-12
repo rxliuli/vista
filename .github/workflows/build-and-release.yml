@@ -55,5 +55,5 @@ jobs:
           less .npmrc
           npm whoami
           npm publish --access public
-     env:
+        env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
