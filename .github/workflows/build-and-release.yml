@@ -15,6 +15,7 @@ jobs:
   build-and-release:
     name: Build and Release
     runs-on: ubuntu-latest
+    environment: npm-publish
 
     steps:
       - name: Checkout npm package repository
