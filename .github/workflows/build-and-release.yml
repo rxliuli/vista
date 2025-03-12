@@ -12,10 +12,6 @@ jobs:
     name: Build and Release
     runs-on: ubuntu-latest
 
-    env:
-      GO_VERSION: '1.24.0'
-      NODE_VERSION: '20.x'
-
     steps:
       - name: Checkout npm package repository
         uses: actions/checkout@v4
@@ -27,9 +23,10 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: 22
           registry-url: https://registry.npmjs.org/
           scope: '@rxliuli'
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install
