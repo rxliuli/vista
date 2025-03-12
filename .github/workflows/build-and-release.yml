@@ -40,5 +40,6 @@ jobs:
       - name: Publish to npm
         run: |
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
+          less .npmrc
           npm whoami
           npm publish --access public
