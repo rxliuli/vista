@@ -1,4 +1,4 @@
-name: Weekly Build and Release
+name: Build and Release
 
 on:
   push:
@@ -34,7 +34,6 @@ jobs:
           pnpm build
 
       - name: Publish to npm
-        working-directory: ./npm-package
         run: pnpm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
