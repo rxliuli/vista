@@ -31,7 +31,7 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install && echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}"
 
       - name: Build
         run: |
