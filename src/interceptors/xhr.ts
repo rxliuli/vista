@@ -238,7 +238,7 @@ export function interceptXHR(...middlewares: Middleware[]) {
         req: new Request(this.#url, {
           method: this.#method,
           headers: this.#headers,
-          body: body as any,
+          body: this.#method === 'GET' ? null : (body as any),
         }),
         res: new Response(),
       }

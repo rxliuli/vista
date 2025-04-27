@@ -362,4 +362,20 @@ describe('interceptXHR', () => {
     expect(r).toEqual([1, 3, 4, 2])
     unIntercept()
   })
+  it('should handle empty body with get method', async () => {
+    const unIntercept = interceptXHR(async (c, next) => {
+      await next()
+    })
+
+    const xhr = await new Promise<XMLHttpRequest>((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open('GET', `${inject('serverUrl')}/todos/1`)
+      xhr.onload = () => resolve(xhr)
+      xhr.onerror = () => reject(xhr)
+      xhr.send('')
+    })
+    expect(xhr.status).toBe(200)
+
+    unIntercept()
+  })
 })
