@@ -27,10 +27,12 @@ describe('interceptXHR', () => {
   it('should intercept XHR', async () => {
     const spy = vi.spyOn(XMLHttpRequest.prototype, 'open')
     const logger = vi.fn()
-    const unIntercept = interceptXHR(async (c, next) => {
-      logger(c.req.url)
-      await next()
-    })
+    const unIntercept = interceptXHR([
+      async (c, next) => {
+        logger(c.req.url)
+        await next()
+      },
+    ])
     await request('https://jsonplaceholder.typicode.com/todos/1')
     expect(logger.mock.calls[0][0]).toBe(
       'https://jsonplaceholder.typicode.com/todos/1',
@@ -40,10 +42,15 @@ describe('interceptXHR', () => {
   })
   it('modify url', async () => {
     const spy = vi.spyOn(XMLHttpRequest.prototype, 'open')
-    const unIntercept = interceptXHR(async (c, next) => {
-      c.req = new Request('https://jsonplaceholder.typicode.com/todos/2', c.req)
-      await next()
-    })
+    const unIntercept = interceptXHR([
+      async (c, next) => {
+        c.req = new Request(
+          'https://jsonplaceholder.typicode.com/todos/2',
+          c.req,
+        )
+        await next()
+      },
+    ])
     const xhr = await request('https://jsonplaceholder.typicode.com/todos/1')
     const r = JSON.parse(xhr.responseText)
     expect(r.id).toBe(2)
@@ -52,12 +59,14 @@ describe('interceptXHR', () => {
   })
   it('modify response', async () => {
     const spy = vi.spyOn(XMLHttpRequest.prototype, 'open')
-    const unIntercept = interceptXHR(async (c, next) => {
-      await next()
-      const json = await c.res.json()
-      json.id = 2
-      c.res = new Response(JSON.stringify(json), c.res)
-    })
+    const unIntercept = interceptXHR([
+      async (c, next) => {
+        await next()
+        const json = await c.res.json()
+        json.id = 2
+        c.res = new Response(JSON.stringify(json), c.res)
+      },
+    ])
     const xhr = await request('https://jsonplaceholder.typicode.com/todos/1')
     const r = JSON.parse(xhr.responseText)
     expect(r.id).toBe(2)
@@ -66,9 +75,11 @@ describe('interceptXHR', () => {
   })
   it('mock response', async () => {
     const spy = vi.spyOn(XMLHttpRequest.prototype, 'open')
-    const unIntercept = interceptXHR(async (c, _next) => {
-      c.res = new Response('test')
-    })
+    const unIntercept = interceptXHR([
+      async (c, _next) => {
+        c.res = new Response('test')
+      },
+    ])
     const xhr = await request('https://jsonplaceholder.typicode.com/todos/1')
     const r = xhr.responseText
     expect(r).toBe('test')
@@ -77,12 +88,14 @@ describe('interceptXHR', () => {
   })
   it('modify response on onload and onerror', async () => {
     const spy = vi.spyOn(XMLHttpRequest.prototype, 'open')
-    const unIntercept = interceptXHR(async (c, next) => {
-      await next()
-      const json = await c.res.json()
-      json.id = 2
-      c.res = new Response(JSON.stringify(json), c.res)
-    })
+    const unIntercept = interceptXHR([
+      async (c, next) => {
+        await next()
+        const json = await c.res.json()
+        json.id = 2
+        c.res = new Response(JSON.stringify(json), c.res)
+      },
+    ])
     const xhr = await request('https://jsonplaceholder.typicode.com/todos/1')
     const r = JSON.parse(xhr.responseText)
     expect(r.id).toBe(2)
@@ -91,12 +104,14 @@ describe('interceptXHR', () => {
   })
   it('modify response on xhr.responseText', async () => {
     const spy = vi.spyOn(XMLHttpRequest.prototype, 'open')
-    const unIntercept = interceptXHR(async (c, next) => {
-      await next()
-      const json = await c.res.json()
-      json.id = 2
-      c.res = new Response(JSON.stringify(json), c.res)
-    })
+    const unIntercept = interceptXHR([
+      async (c, next) => {
+        await next()
+        const json = await c.res.json()
+        json.id = 2
+        c.res = new Response(JSON.stringify(json), c.res)
+      },
+    ])
     const xhr = await request('https://jsonplaceholder.typicode.com/todos/1')
     const r = JSON.parse(xhr.responseText)
     expect(r.id).toBe(2)
@@ -104,9 +119,11 @@ describe('interceptXHR', () => {
     unIntercept()
   })
   it('handle error', async () => {
-    const unIntercept = interceptXHR(async (c, next) => {
-      throw 'test'
-    })
+    const unIntercept = interceptXHR([
+      async (c, next) => {
+        throw 'test'
+      },
+    ])
     const xhr = request('https://jsonplaceholder.typicode.com/todos/1')
     await expect(xhr).rejects.toThrow()
     try {
@@ -118,11 +135,13 @@ describe('interceptXHR', () => {
     unIntercept()
   })
   it('handle http exception', async () => {
-    const unIntercept = interceptXHR(async (c, next) => {
-      throw new HTTPException(404, {
-        message: 'test',
-      })
-    })
+    const unIntercept = interceptXHR([
+      async (c, next) => {
+        throw new HTTPException(404, {
+          message: 'test',
+        })
+      },
+    ])
     const xhr = request('https://jsonplaceholder.typicode.com/todos/1')
     await expect(xhr).rejects.toThrow()
     try {
@@ -138,12 +157,14 @@ describe('interceptXHR', () => {
       responseType: 'json',
     })
     expect(xhr1.response).toMatchObject({ id: 1 })
-    const unIntercept = interceptXHR(async (c, next) => {
-      await next()
-      throw new HTTPException(400, {
-        message: 'test',
-      })
-    })
+    const unIntercept = interceptXHR([
+      async (c, next) => {
+        await next()
+        throw new HTTPException(400, {
+          message: 'test',
+        })
+      },
+    ])
     const xhr2 = request(`${inject('serverUrl')}/todos/1`)
     await expect(xhr2).rejects.toThrow()
     try {
@@ -156,9 +177,11 @@ describe('interceptXHR', () => {
     unIntercept()
   })
   it('handle normal error', async () => {
-    const unIntercept = interceptXHR(async (c, next) => {
-      throw new Error('test')
-    })
+    const unIntercept = interceptXHR([
+      async (c, next) => {
+        throw new Error('test')
+      },
+    ])
     const xhr = request('https://jsonplaceholder.typicode.com/todos/1')
     await expect(xhr).rejects.toThrow()
     try {
@@ -170,17 +193,21 @@ describe('interceptXHR', () => {
     unIntercept()
   })
   it('handle empty response', async () => {
-    const unIntercept = interceptXHR(async (_c, next) => {
-      await next()
-    })
+    const unIntercept = interceptXHR([
+      async (_c, next) => {
+        await next()
+      },
+    ])
     const xhr = await request(`${inject('serverUrl')}/empty`)
     expect(xhr.status).toBe(204)
     unIntercept()
   })
   it('set responseType', async () => {
-    const unIntercept = interceptXHR(async (_c, next) => {
-      await next()
-    })
+    const unIntercept = interceptXHR([
+      async (_c, next) => {
+        await next()
+      },
+    ])
     const xhr = new XMLHttpRequest()
     xhr.open('GET', 'https://jsonplaceholder.typicode.com/todos/1')
     xhr.responseType = 'text'
@@ -226,52 +253,58 @@ describe('interceptXHR', () => {
     }
     it('modify sse response', async () => {
       expect(await f(5)).length(5)
-      const unIntercept = interceptXHR(async (c, next) => {
-        await next()
-        if (
-          c.res.headers.get('Content-Type') === 'text/event-stream' &&
-          c.res.body
-        ) {
-          c.res = new Response(
-            new ReadableStream({
-              async start(controller) {
-                const reader = c.res.body!.getReader()
-                let chunk = await reader.read()
-                while (!chunk.done) {
-                  controller.enqueue(chunk.value)
-                  controller.enqueue(chunk.value)
-                  chunk = await reader.read()
-                }
-                controller.close()
-              },
-            }),
-            c.res,
-          )
-        }
-      })
+      const unIntercept = interceptXHR([
+        async (c, next) => {
+          await next()
+          if (
+            c.res.headers.get('Content-Type') === 'text/event-stream' &&
+            c.res.body
+          ) {
+            c.res = new Response(
+              new ReadableStream({
+                async start(controller) {
+                  const reader = c.res.body!.getReader()
+                  let chunk = await reader.read()
+                  while (!chunk.done) {
+                    controller.enqueue(chunk.value)
+                    controller.enqueue(chunk.value)
+                    chunk = await reader.read()
+                  }
+                  controller.close()
+                },
+              }),
+              c.res,
+            )
+          }
+        },
+      ])
       expect(await f(5)).length(10)
       unIntercept()
     })
     it('read sse response', async () => {
       expect(await f(5)).length(5)
       const chunks: string[] = []
-      const unIntercept = interceptXHR(async (c, next) => {
-        await next()
-        const cloneResp = c.res.clone()
-        if (
-          cloneResp.headers.get('Content-Type') === 'text/event-stream' &&
-          cloneResp.body
-        ) {
-          const reader = cloneResp
-            .body!.pipeThrough(new TextDecoderStream())
-            .getReader()
-          let chunk = await reader.read()
-          while (!chunk.done) {
-            chunks.push(...chunk.value!.split('\n\n').filter((it) => it.trim()))
-            chunk = await reader.read()
+      const unIntercept = interceptXHR([
+        async (c, next) => {
+          await next()
+          const cloneResp = c.res.clone()
+          if (
+            cloneResp.headers.get('Content-Type') === 'text/event-stream' &&
+            cloneResp.body
+          ) {
+            const reader = cloneResp
+              .body!.pipeThrough(new TextDecoderStream())
+              .getReader()
+            let chunk = await reader.read()
+            while (!chunk.done) {
+              chunks.push(
+                ...chunk.value!.split('\n\n').filter((it) => it.trim()),
+              )
+              chunk = await reader.read()
+            }
           }
-        }
-      })
+        },
+      ])
       expect(await f(5)).length(5)
       expect(chunks).length(5)
       unIntercept()
@@ -279,9 +312,11 @@ describe('interceptXHR', () => {
   })
   it('send body', async () => {
     const spy = vi.spyOn(XMLHttpRequest.prototype, 'send')
-    const unIntercept = interceptXHR(async (c, next) => {
-      await next()
-    })
+    const unIntercept = interceptXHR([
+      async (c, next) => {
+        await next()
+      },
+    ])
     const xhr = new XMLHttpRequest()
     xhr.open('POST', 'https://jsonplaceholder.typicode.com/todos/1')
     xhr.send('test')
@@ -295,10 +330,12 @@ describe('interceptXHR', () => {
       return Date.now() - start
     }
     const r1 = await f()
-    const unIntercept = interceptXHR(async (c, next) => {
-      await next()
-      await new Promise((resolve) => setTimeout(resolve, 100))
-    })
+    const unIntercept = interceptXHR([
+      async (c, next) => {
+        await next()
+        await new Promise((resolve) => setTimeout(resolve, 100))
+      },
+    ])
     const r2 = await f()
     expect(r1).lt(100)
     expect(r2).gt(100)
@@ -306,11 +343,13 @@ describe('interceptXHR', () => {
   })
   it('blocking request of readystatechange', async () => {
     const r: number[] = []
-    const unIntercept = interceptXHR(async (_c, next) => {
-      await next()
-      await new Promise((resolve) => setTimeout(resolve, 100))
-      r.push(1)
-    })
+    const unIntercept = interceptXHR([
+      async (_c, next) => {
+        await next()
+        await new Promise((resolve) => setTimeout(resolve, 100))
+        r.push(1)
+      },
+    ])
     await new Promise<void>((resolve) => {
       const xhr = new XMLHttpRequest()
       xhr.open('GET', `${inject('serverUrl')}/todos/1`)
@@ -329,10 +368,12 @@ describe('interceptXHR', () => {
   })
   it('set responseType to json', async () => {
     let json: any
-    const unIntercept = interceptXHR(async (c, next) => {
-      await next()
-      json = await c.res.clone().json()
-    })
+    const unIntercept = interceptXHR([
+      async (c, next) => {
+        await next()
+        json = await c.res.clone().json()
+      },
+    ])
     const xhr = new XMLHttpRequest()
     xhr.open('GET', `${inject('serverUrl')}/todos/1`)
     xhr.responseType = 'json'
@@ -346,7 +387,7 @@ describe('interceptXHR', () => {
   })
   it('interceptXHR should be executed in the order of the onion model', async () => {
     const r: number[] = []
-    const unIntercept = interceptXHR(
+    const unIntercept = interceptXHR([
       async (_c, next) => {
         r.push(1)
         await next()
@@ -357,15 +398,17 @@ describe('interceptXHR', () => {
         await next()
         r.push(4)
       },
-    )
+    ])
     await request(`${inject('serverUrl')}/todos/1`)
     expect(r).toEqual([1, 3, 4, 2])
     unIntercept()
   })
   it('should handle empty body with get method', async () => {
-    const unIntercept = interceptXHR(async (c, next) => {
-      await next()
-    })
+    const unIntercept = interceptXHR([
+      async (c, next) => {
+        await next()
+      },
+    ])
 
     const xhr = await new Promise<XMLHttpRequest>((resolve, reject) => {
       const xhr = new XMLHttpRequest()

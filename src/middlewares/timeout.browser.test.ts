@@ -1,11 +1,13 @@
 import { afterEach, beforeEach, describe, expect, inject, it, vi } from 'vitest'
-import { Vista } from '../../vista'
-import { timeout } from '.'
+import { Vista } from '../vista'
+import { timeout } from './timeout'
+import { FetchContext, interceptFetch } from '../interceptors/fetch'
+import { interceptXHR } from '../interceptors/xhr'
 
 describe('timeout', () => {
-  let vista: Vista
+  let vista: Vista<FetchContext>
   beforeEach(() => {
-    vista = new Vista()
+    vista = new Vista([interceptFetch, interceptXHR])
     vista.use(timeout(500))
     vista.intercept()
   })

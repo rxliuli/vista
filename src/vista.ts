@@ -1,20 +1,25 @@
-import { interceptFetch } from './interceptors/fetch'
-import { interceptXHR } from './interceptors/xhr'
-import { Middleware } from './types'
+import { BaseContext, BaseMiddleware } from './types'
 
-export class Vista {
-  private middlewares: Middleware[] = []
+export class Vista<T extends BaseContext> {
+  private middlewares: BaseMiddleware<T>[] = []
 
-  use(middleware: Middleware) {
+  private cancels: (() => void)[] = []
+
+  constructor(
+    private readonly interceptors: Array<
+      (middlewares: BaseMiddleware<T>[]) => () => void
+    > = [],
+  ) {}
+
+  use(middleware: BaseMiddleware<T>) {
     this.middlewares.push(middleware)
     return this
   }
 
-  private cancels: (() => void)[] = []
-
   intercept() {
-    this.cancels.push(interceptFetch(...this.middlewares))
-    this.cancels.push(interceptXHR(...this.middlewares))
+    this.cancels = this.interceptors.map((interceptor) =>
+      interceptor(this.middlewares),
+    )
   }
 
   destroy() {

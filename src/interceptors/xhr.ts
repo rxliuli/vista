@@ -1,6 +1,8 @@
-import { Context, handleRequest } from '../context'
+import { Middleware } from '..'
+import { handleRequest } from '../context'
 import { HTTPException } from '../http-exception'
-import { Middleware } from '../types'
+import { Interceptor } from '../types'
+import { FetchContext, FetchMiddleware } from './fetch'
 
 function xhrToResponse(xhr: XMLHttpRequest) {
   const responseInit = {
@@ -98,7 +100,9 @@ function parseHeadersText(text: string) {
     }, {} as Record<string, string>)
 }
 
-export function interceptXHR(...middlewares: Middleware[]) {
+export const interceptXHR: Interceptor<FetchMiddleware> = function (
+  middlewares: Middleware[],
+) {
   if (typeof XMLHttpRequest === 'undefined') {
     return () => {}
   }
@@ -242,7 +246,7 @@ export function interceptXHR(...middlewares: Middleware[]) {
         }),
         res: new Response(),
       }
-      const c: Context = {
+      const c: FetchContext = {
         type: 'xhr',
         req: origin.req,
         res: origin.res,
@@ -333,79 +337,81 @@ export function interceptXHR(...middlewares: Middleware[]) {
         })
     }
 
-    #getMiddleware: (origin: { req: Request; res: Response }) => Middleware =
-      (origin) => async (c) => {
-        const openArgs: any[] = [c.req.method, c.req.url]
-        if (this.#async !== undefined) {
-          openArgs.push(this.#async)
-        }
-        if (this.#username !== undefined) {
-          openArgs.push(this.#username)
-        }
-        if (this.#password !== undefined) {
-          openArgs.push(this.#password)
-        }
-        super.open.apply(this, openArgs as any)
-        Object.entries(this.#headers).forEach(([name, value]) => {
-          super.setRequestHeader.apply(this, [name, value])
-        })
-        this.#listeners
-          .filter(
-            ([type]) =>
-              ![
-                'load',
-                'loadend',
-                'readystatechange',
-                'error',
-                'progress',
-              ].includes(type),
-          )
-          .forEach(([type, listener, options]) => {
-            super.addEventListener.apply(this, [type, listener as any, options])
-          })
-        let sendBody = this.#body
-        if (c.req !== origin.req) {
-          sendBody = c.req.body as any
-        }
-        await new Promise<void>((resolve, reject) => {
-          super.addEventListener.apply(this, [
-            'load',
-            (_ev) => {
-              c.res = xhrToResponse(this)
-              origin.res = c.res
-              resolve()
-            },
-          ])
-          super.addEventListener.apply(this, [
-            'error',
-            (_ev) => {
-              reject(new Error(this.status + ' ' + this.statusText))
-            },
-          ])
-          super.addEventListener.apply(this, [
-            'readystatechange',
-            (ev) => {
-              if (this.readyState === XMLHttpRequest.DONE) {
-                return
-              }
-              this.#listeners
-                .filter(([type]) => type === 'readystatechange')
-                .forEach(([_type, listener, _options]) => {
-                  listener.call(this, ev as ProgressEvent)
-                })
-            },
-          ])
-          if (c.req.body) {
-            super.send.apply(this, [sendBody])
-          }
-          // body is undefined when the request in Firefox 🤡
-          else if (c.req === origin.req) {
-            super.send.apply(this, [this.#body])
-          } else {
-            super.send.apply(this)
-          }
-        })
+    #getMiddleware: (origin: {
+      req: Request
+      res: Response
+    }) => FetchMiddleware = (origin) => async (c) => {
+      const openArgs: any[] = [c.req.method, c.req.url]
+      if (this.#async !== undefined) {
+        openArgs.push(this.#async)
       }
+      if (this.#username !== undefined) {
+        openArgs.push(this.#username)
+      }
+      if (this.#password !== undefined) {
+        openArgs.push(this.#password)
+      }
+      super.open.apply(this, openArgs as any)
+      Object.entries(this.#headers).forEach(([name, value]) => {
+        super.setRequestHeader.apply(this, [name, value])
+      })
+      this.#listeners
+        .filter(
+          ([type]) =>
+            ![
+              'load',
+              'loadend',
+              'readystatechange',
+              'error',
+              'progress',
+            ].includes(type),
+        )
+        .forEach(([type, listener, options]) => {
+          super.addEventListener.apply(this, [type, listener as any, options])
+        })
+      let sendBody = this.#body
+      if (c.req !== origin.req) {
+        sendBody = c.req.body as any
+      }
+      await new Promise<void>((resolve, reject) => {
+        super.addEventListener.apply(this, [
+          'load',
+          (_ev) => {
+            c.res = xhrToResponse(this)
+            origin.res = c.res
+            resolve()
+          },
+        ])
+        super.addEventListener.apply(this, [
+          'error',
+          (_ev) => {
+            reject(new Error(this.status + ' ' + this.statusText))
+          },
+        ])
+        super.addEventListener.apply(this, [
+          'readystatechange',
+          (ev) => {
+            if (this.readyState === XMLHttpRequest.DONE) {
+              return
+            }
+            this.#listeners
+              .filter(([type]) => type === 'readystatechange')
+              .forEach(([_type, listener, _options]) => {
+                listener.call(this, ev as ProgressEvent)
+              })
+          },
+        ])
+        if (c.req.body) {
+          super.send.apply(this, [sendBody])
+        }
+        // body is undefined when the request in Firefox 🤡
+        else if (c.req === origin.req) {
+          super.send.apply(this, [this.#body])
+        } else {
+          super.send.apply(this)
+        }
+      })
+    }
   }
   const pureXHR = globalThis.XMLHttpRequest
   globalThis.XMLHttpRequest = CustomXHR

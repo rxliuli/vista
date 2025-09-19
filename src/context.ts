@@ -1,16 +1,10 @@
-import { Middleware } from './types'
+import { BaseContext, BaseMiddleware } from './types'
 
-export interface Context {
-  req: Request
-  res: Response
-  type: 'fetch' | 'xhr' | 'request'
 
-  [key: string]: any
-}
 
-export async function handleRequest(
-  context: Context,
-  middlewares: Middleware[],
+export async function handleRequest<T extends BaseContext>(
+  context: T,
+  middlewares: BaseMiddleware<T>[],
 ) {
   const compose = (i: number): Promise<void> => {
     if (i >= middlewares.length) {

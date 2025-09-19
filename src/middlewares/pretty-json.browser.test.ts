@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, inject, it, vi } from 'vitest'
-import { prettyJSON } from '.'
-import { Vista } from '../../vista'
+import { prettyJSON } from './pretty-json'
+import { FetchContext, interceptFetch } from '../interceptors/fetch'
+import { Vista } from '../vista'
+import { interceptXHR } from '../interceptors/xhr'
 
 describe('pretty json', () => {
-  let vista: Vista
+  let vista: Vista<FetchContext>
   const expected = {
     userId: 1,
     id: 1,
@@ -11,7 +13,7 @@ describe('pretty json', () => {
     completed: false,
   }
   beforeEach(() => {
-    vista = new Vista()
+    vista = new Vista<FetchContext>([interceptFetch, interceptXHR])
     vista.use(prettyJSON())
     vista.intercept()
   })

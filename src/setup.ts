@@ -2,7 +2,7 @@ import { serve, ServerType } from '@hono/node-server'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { streamSSE } from 'hono/streaming'
-import { detectPort, waitPort } from 'detect-port'
+import { detectPort } from 'detect-port'
 import type { TestProject } from 'vitest/node'
 
 let server: ServerType

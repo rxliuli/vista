@@ -5,15 +5,10 @@
   "type": "module",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
+      "import": "./dist/index.mjs",
       "types": "./dist/index.d.ts"
-    },
-    "./http-exception": {
-      "import": "./dist/http-exception.js",
-      "types": "./dist/http-exception.d.ts"
     }
   },
-  "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "repository": {
     "type": "git",
@@ -25,22 +20,28 @@
   ],
   "scripts": {
     "setup": "pnpm build",
-    "build": "tsup src/index.ts src/http-exception.ts src/middlewares/*/index.ts --format=esm --dts",
+    "build": "unbuild",
     "dev": "pnpm build --watch",
     "test:server": "vite-node src/test-server.ts",
     "test": "vitest run"
   },
   "sideEffects": false,
   "devDependencies": {
-    "@hono/node-server": "^1.13.7",
-    "@vitest/browser": "^3.0.4",
+    "@hono/node-server": "^1.19.3",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^5.0.3",
+    "@vitest/browser": "^3.2.4",
     "detect-port": "^2.1.0",
-    "hono": "^4.6.18",
-    "playwright": "^1.50.0",
-    "tsup": "^8.3.5",
-    "typescript": "^5.7.3",
-    "vite-node": "^3.0.4",
-    "vitest": "^3.0.4"
+    "hono": "^4.9.8",
+    "playwright": "^1.55.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "typescript": "^5.9.2",
+    "unbuild": "^3.6.1",
+    "vite-node": "^3.2.4",
+    "vitest": "^3.2.4",
+    "vitest-browser-react": "^1.0.1"
   },
   "publishConfig": {
     "access": "public",

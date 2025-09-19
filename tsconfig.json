@@ -10,7 +10,8 @@
     "moduleResolution": "bundler",
     "sourceMap": true,
     "declaration": true,
-    "declarationMap": true
+    "declarationMap": true,
+    "jsx": "react-jsx"
   },
   "include": ["src", "test/test-server.ts"]
 }

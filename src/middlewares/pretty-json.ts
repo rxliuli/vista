@@ -3,7 +3,7 @@
  * Pretty JSON Middleware for Hono.
  */
 
-import { Middleware } from '../../types'
+import { FetchMiddleware } from '../interceptors/fetch'
 
 interface PrettyOptions {
   /**
@@ -37,7 +37,7 @@ interface PrettyOptions {
  * })
  * ```
  */
-export const prettyJSON = (options?: PrettyOptions): Middleware => {
+export const prettyJSON = (options?: PrettyOptions): FetchMiddleware => {
   const targetQuery = options?.query ?? 'pretty'
   return async function prettyJSON(c, next) {
     const pretty = !!new URL(c.req.url).searchParams.has(targetQuery)

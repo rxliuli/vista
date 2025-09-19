@@ -3,11 +3,10 @@
  * Timeout Middleware for Hono.
  */
 
-import type { Context } from '../../context'
-import { HTTPException } from '../../http-exception'
-import type { Middleware } from '../../types'
+import { HTTPException } from '../http-exception'
+import { FetchContext, FetchMiddleware } from '../interceptors/fetch'
 
-export type HTTPExceptionFunction = (context: Context) => HTTPException
+export type HTTPExceptionFunction = (context: FetchContext) => HTTPException
 
 const defaultTimeoutException = new HTTPException(504, {
   message: 'Gateway Timeout',
@@ -38,7 +37,7 @@ const defaultTimeoutException = new HTTPException(504, {
 export const timeout = (
   duration: number,
   exception: HTTPExceptionFunction | HTTPException = defaultTimeoutException,
-): Middleware => {
+): FetchMiddleware => {
   return async function timeout(context, next) {
     let timer: number | undefined
     const timeoutPromise = new Promise<void>((_, reject) => {
