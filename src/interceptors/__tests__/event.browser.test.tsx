@@ -332,4 +332,53 @@ describe('interceptEvent', () => {
     await userEvent.click(button)
     expect(clickHandler).toBeCalledTimes(3)
   })
+  it('once listener', async () => {
+    const wrappedListeners: NonNullable<
+      InterceptEventOptions['wrappedListeners']
+    > = []
+    const unIntercept = interceptEvent(
+      [
+        async (_c, next) => {
+          await next()
+        },
+      ],
+      {
+        wrappedListeners,
+      },
+    )
+
+    const f = vi.fn(function mocked() {})
+    document.addEventListener('load', f, { once: true })
+    expect(wrappedListeners).length(1)
+    document.dispatchEvent(new Event('load'))
+    expect(wrappedListeners).length(0)
+    document.dispatchEvent(new Event('load'))
+    expect(wrappedListeners).length(0)
+    document.removeEventListener('load', f)
+    expect(f).toBeCalledTimes(1)
+
+    unIntercept()
+  })
+  it('shadow DOM', async () => {
+    const unIntercept = interceptEvent([
+      (_c, next) => {
+        return next()
+      },
+    ])
+
+    const host = document.createElement('div')
+    const shadow = host.attachShadow({ mode: 'open' })
+    const button = document.createElement('button')
+    button.textContent = 'click me'
+    shadow.appendChild(button)
+    document.body.appendChild(host)
+    const clickHandler = vi.fn()
+    button.addEventListener('click', clickHandler)
+    await userEvent.click(button)
+    expect(clickHandler).toBeCalledTimes(1)
+
+    unIntercept()
+    await userEvent.click(button)
+    expect(clickHandler).toBeCalledTimes(2)
+  })
 })

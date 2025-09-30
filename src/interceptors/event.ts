@@ -10,7 +10,7 @@ export type EventMiddleware = BaseMiddleware<EventContext>
 export interface InterceptEventOptions {
   wrappedListeners?: {
     original: EventListenerOrEventListenerObject
-    listener: EventListener // to wrapped
+    wrapped: EventListener // to wrapped
     type: string
     dom: EventTarget // to element
     options?: boolean | AddEventListenerOptions
@@ -30,6 +30,9 @@ export const interceptEvent: Interceptor<
       return
     }
     const wrappedListener = function (this: EventTarget, event: Event) {
+      if (typeof options === 'object' && 'once' in options && options.once) {
+        this.removeEventListener(type, listener)
+      }
       return handleRequest({ type: 'event' as const, event }, [
         ...middlewares,
         (c) =>
@@ -41,7 +44,7 @@ export const interceptEvent: Interceptor<
     wrappedListeners.push({
       original: listener,
       dom: this,
-      listener: wrappedListener,
+      wrapped: wrappedListener,
       type,
       options,
     })
@@ -57,24 +60,20 @@ export const interceptEvent: Interceptor<
       return
     }
     const listeners = wrappedListeners.filter(
-      (it) =>
-        it.dom === this &&
-        it.type === type &&
-        it.original === listener &&
-        it.options === options,
+      (it) => it.dom === this && it.type === type && it.original === listener,
     )
     if (listeners.length === 0) {
       console.warn('Event listener is not wrapped, cannot remove listener')
       return
     }
     listeners.forEach((it) => {
-      originalRemoveEventListener.call(this, type, it.listener, options)
+      originalRemoveEventListener.call(this, type, it.wrapped, options)
       wrappedListeners.splice(wrappedListeners.indexOf(it), 1)
     })
   }
   return () => {
     wrappedListeners.forEach((it) => {
-      originalRemoveEventListener.call(it.dom, it.type, it.listener, it.options)
+      originalRemoveEventListener.call(it.dom, it.type, it.wrapped, it.options)
       originalAddEventListener.call(it.dom, it.type, it.original, it.options)
     })
     wrappedListeners.length = 0
