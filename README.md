@@ -25,12 +25,36 @@ yarn add @rxliuli/vista
 pnpm add @rxliuli/vista
 ```
 
+### CDN Import
+
+Use directly in the browser via CDN:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/@rxliuli/vista@latest/dist/vista.min.mjs"></script>
+```
+
+For userscripts (Tampermonkey/Greasemonkey):
+
+```js
+// @require https://cdn.jsdelivr.net/npm/@rxliuli/vista@latest/dist/vista.min.mjs
+```
+
+> **Note**: If uploading to Greasyfork, replace `@latest` with a specific version number.
+
 ## Basic Usage
 
-```ts
-import { Vista } from '@rxliuli/vista'
+### CDN Usage
 
-new Vista()
+```js
+const { Vista, interceptFetch, interceptXHR } = window.Vista;
+```
+
+### NPM Usage
+
+```ts
+import { Vista, interceptFetch, interceptXHR } from '@rxliuli/vista'
+
+new Vista([interceptFetch, interceptXHR])
   .use(async (c, next) => {
     console.log('Request started:', c.req.url)
     await next()
@@ -47,7 +71,7 @@ new Vista()
 ### Add global request headers
 
 ```ts
-new Vista()
+new Vista([interceptFetch, interceptXHR])
   .use(async (c, next) => {
     c.req.headers.set('Authorization', 'Bearer token')
     await next()
@@ -58,7 +82,7 @@ new Vista()
 ### Modify request URL
 
 ```ts
-new Vista()
+new Vista([interceptFetch, interceptXHR])
   .use(async (c, next) => {
     const newUrl = 'https://example.com/new-url'
     c.req = new Request(newUrl + '?url=' + c.req.url, c.req)
@@ -72,7 +96,7 @@ new Vista()
 ```ts
 const cache = new Map()
 
-new Vista()
+new Vista([interceptFetch, interceptXHR])
   .use(async (c, next) => {
     const key = c.req.url
     if (cache.has(key)) {
@@ -88,7 +112,7 @@ new Vista()
 ### Request failed, please retry
 
 ```ts
-new Vista()
+new Vista([interceptFetch, interceptXHR])
   .use(async (c, next) => {
     const maxRetries = 3
     let retries = 0
@@ -109,7 +133,7 @@ new Vista()
 ### Dynamic modify response
 
 ```ts
-new Vista()
+new Vista([interceptFetch, interceptXHR])
   .use(async (c, next) => {
     await next()
     if (c.req.url === 'https://example.com/example') {
@@ -124,7 +148,7 @@ new Vista()
 ### Modify stream response
 
 ```ts
-new Vista()
+new Vista([interceptFetch, interceptXHR])
   .use(async (c, next) => {
     await next()
     if (
@@ -177,7 +201,7 @@ The middleware function receives two parameters:
 1. **How to stop interception?**
 
    ```ts
-   const vista = new Vista()
+   const vista = new Vista([interceptFetch, interceptXHR])
    vista.intercept()
    // When not needed
    vista.destroy()
