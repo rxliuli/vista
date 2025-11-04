@@ -30,13 +30,13 @@ pnpm add @rxliuli/vista
 Use directly in the browser via CDN:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@rxliuli/vista@latest/dist/vista.min.mjs"></script>
+<script src="https://cdn.jsdelivr.net/npm/@rxliuli/vista@latest/dist/index.iife.mjs"></script>
 ```
 
 For userscripts (Tampermonkey/Greasemonkey):
 
 ```js
-// @require https://cdn.jsdelivr.net/npm/@rxliuli/vista@latest/dist/vista.min.mjs
+// @require https://cdn.jsdelivr.net/npm/@rxliuli/vista@latest/dist/index.iife.mjs
 ```
 
 > **Note**: If uploading to Greasyfork, replace `@latest` with a specific version number.

@@ -13,17 +13,10 @@ export default defineBuildConfig([
 		declaration: true,
 		clean: true,
 	},
-	{
-		name: 'minified',
-		entries: [
-			{ input: 'src/cdn.ts', name: 'vista.min', declaration: false },
-		],
-		outDir: 'dist',
-		rollup: {
-			esbuild: {
-				minify: true,
-			},
-		},
-		clean: true,
-	},
+  {
+    name: 'iife',
+    entries: [{ input: 'src/cdn.ts', name: 'index.iife', declaration: false }],
+    outDir: 'dist',
+    clean: true,
+  },
 ])
