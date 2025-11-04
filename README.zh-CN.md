@@ -25,7 +25,31 @@ yarn add @rxliuli/vista
 pnpm add @rxliuli/vista
 ```
 
+### CDN 引入
+
+通过 CDN 直接在浏览器中使用：
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/@rxliuli/vista@latest/dist/vista.min.mjs"></script>
+```
+
+用户脚本（Tampermonkey/Greasemonkey）：
+
+```js
+// @require https://cdn.jsdelivr.net/npm/@rxliuli/vista@latest/dist/vista.min.mjs
+```
+
+> **注意**：如需上传到 Greasyfork，请将 `@latest` 替换为具体版本号。
+
 ## 基础使用
+
+### CDN 使用方式
+
+```js
+const { Vista, interceptFetch, interceptXHR } = window.Vista;
+```
+
+### NPM 使用方式
 
 ```ts
 import { Vista } from '@rxliuli/vista'
