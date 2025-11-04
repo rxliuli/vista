@@ -21,7 +21,6 @@ export default defineBuildConfig([
 		outDir: 'dist',
 		rollup: {
 			esbuild: {
-				format: 'iife',
 				minify: true,
 			},
 		},
