@@ -30,13 +30,13 @@ pnpm add @rxliuli/vista
 通过 CDN 直接在浏览器中使用：
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@rxliuli/vista@latest/dist/vista.min.mjs"></script>
+<script src="https://cdn.jsdelivr.net/npm/@rxliuli/vista@latest/dist/index.iife.mjs"></script>
 ```
 
 用户脚本（Tampermonkey/Greasemonkey）：
 
 ```js
-// @require https://cdn.jsdelivr.net/npm/@rxliuli/vista@latest/dist/vista.min.mjs
+// @require https://cdn.jsdelivr.net/npm/@rxliuli/vista@latest/dist/index.iife.mjs
 ```
 
 > **注意**：如需上传到 Greasyfork，请将 `@latest` 替换为具体版本号。
