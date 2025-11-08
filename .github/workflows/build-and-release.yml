@@ -2,8 +2,9 @@ name: Build and Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
+    paths:
+      - 'package.json'
 
   workflow_dispatch:
 
@@ -12,32 +13,39 @@ permissions:
   id-token: write
 
 jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.version.outputs.changed }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check version change
+        id: version
+        uses: rxliuli/version-check@v1
+        with:
+          file: ./package.json
+
   build-and-release:
     name: Build and Release
     runs-on: ubuntu-latest
     environment: npm-publish
-
     steps:
       - name: Checkout npm package repository
         uses: actions/checkout@v4
-
       - uses: pnpm/action-setup@v4
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           registry-url: https://registry.npmjs.org/
           scope: '@rxliuli'
           cache: 'pnpm'
-
       - name: Install dependencies
         run: pnpm install
-
       - name: Build
         run: |
           pnpm build
-
       - name: Publish to npm
         run: |
           npm publish --access public

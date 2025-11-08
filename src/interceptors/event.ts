@@ -17,6 +17,9 @@ export interface InterceptEventOptions {
   }[]
 }
 
+/**
+ * @deprecated
+ */
 export const interceptEvent: Interceptor<
   EventMiddleware,
   InterceptEventOptions

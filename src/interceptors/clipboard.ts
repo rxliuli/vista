@@ -7,6 +7,9 @@ export interface ClipboardContext {
 }
 export type ClipboardMiddleware = BaseMiddleware<ClipboardContext>
 
+/**
+ * @deprecated
+ */
 export const interceptClipboard: Interceptor<ClipboardMiddleware> = (
   middlewares,
 ): (() => void) => {
