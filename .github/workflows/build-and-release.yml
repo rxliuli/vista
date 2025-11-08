@@ -27,8 +27,10 @@ jobs:
           file: ./package.json
 
   build-and-release:
-    name: Build and Release
+    needs: version
+    if: needs.version.outputs.changed == 'true'
     runs-on: ubuntu-latest
+    name: Build and Release
     environment: npm-publish
     steps:
       - name: Checkout npm package repository
