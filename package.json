@@ -22,7 +22,6 @@
     "setup": "pnpm build",
     "build": "unbuild",
     "dev": "pnpm build --watch",
-    "test:server": "vite-node src/test-server.ts",
     "test": "vitest run"
   },
   "sideEffects": false,
@@ -39,7 +38,6 @@
     "react-dom": "^19.1.1",
     "typescript": "^5.9.2",
     "unbuild": "^3.6.1",
-    "vite-node": "^3.2.4",
     "vitest": "^3.2.4",
     "vitest-browser-react": "^1.0.1"
   },
