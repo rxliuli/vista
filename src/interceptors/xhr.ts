@@ -106,15 +106,15 @@ export const interceptXHR: Interceptor<FetchMiddleware> = function (
     return () => {}
   }
   class CustomXHR extends globalThis.XMLHttpRequest {
-    #method: string = ''
-    #url: string | URL = ''
-    #async?: boolean
-    #username?: string | null
-    #password?: string | null
-    #headers: Record<string, string> = {}
-    #body?: Document | XMLHttpRequestBodyInit | null
+    private __method: string = ''
+    private __url: string | URL = ''
+    private __async?: boolean
+    private __username?: string | null
+    private __password?: string | null
+    private __headers: Record<string, string> = {}
+    private __body?: Document | XMLHttpRequestBodyInit | null
 
-    #listeners: [
+    private __listeners: [
       string,
       (this: XMLHttpRequest, ev: ProgressEvent) => any,
       boolean | AddEventListenerOptions | undefined,
@@ -135,27 +135,27 @@ export const interceptXHR: Interceptor<FetchMiddleware> = function (
       username?: string | null,
       password?: string | null,
     ): void {
-      this.#method = method
-      this.#url = url
+      this.__method = method
+      this.__url = url
       if (async !== undefined) {
-        this.#async = async
+        this.__async = async
       }
       if (username !== undefined) {
-        this.#username = username
+        this.__username = username
       }
       if (password !== undefined) {
-        this.#password = password
+        this.__password = password
       }
     }
 
-    static #middlewares: FetchMiddleware[] = []
+    private static __middlewares: FetchMiddleware[] = []
 
     static middlewares(middlewares: FetchMiddleware[]) {
-      CustomXHR.#middlewares = middlewares
+      CustomXHR.__middlewares = middlewares
     }
 
     setRequestHeader(name: string, value: string): void {
-      this.#headers[name] = value
+      this.__headers[name] = value
     }
 
     addEventListener<K extends keyof XMLHttpRequestEventMap>(
@@ -169,7 +169,7 @@ export const interceptXHR: Interceptor<FetchMiddleware> = function (
       options?: boolean | AddEventListenerOptions,
     ): void
     addEventListener(type: any, listener: any, options?: any): void {
-      this.#listeners.push([type, listener, options])
+      this.__listeners.push([type, listener, options])
     }
     removeEventListener<K extends keyof XMLHttpRequestEventMap>(
       type: K,
@@ -182,66 +182,66 @@ export const interceptXHR: Interceptor<FetchMiddleware> = function (
       options?: boolean | EventListenerOptions,
     ): void
     removeEventListener(type: any, listener: any, options?: any): void {
-      this.#listeners = this.#listeners.filter(
+      this.__listeners = this.__listeners.filter(
         ([t, l, o]) => t !== type || l !== listener || o !== options,
       )
     }
     set onload(callback: (this: XMLHttpRequest, ev: ProgressEvent) => any) {
-      this.#listeners.push(['load', callback, false])
+      this.__listeners.push(['load', callback, false])
     }
     set onerror(callback: (this: XMLHttpRequest, ev: ProgressEvent) => any) {
-      this.#listeners.push(['error', callback, false])
+      this.__listeners.push(['error', callback, false])
     }
     set onprogress(callback: (this: XMLHttpRequest, ev: ProgressEvent) => any) {
-      this.#listeners.push(['progress', callback, false])
+      this.__listeners.push(['progress', callback, false])
     }
     set onreadystatechange(callback: (this: XMLHttpRequest, ev: Event) => any) {
-      this.#listeners.push(['readystatechange', callback, false])
+      this.__listeners.push(['readystatechange', callback, false])
     }
 
     get status() {
-      return this.#responseXHR?.status ?? super.status
+      return this.__responseXHR?.status ?? super.status
     }
 
     get statusText() {
-      return this.#responseXHR?.statusText ?? super.statusText
+      return this.__responseXHR?.statusText ?? super.statusText
     }
 
     get responseURL() {
-      return this.#responseXHR?.responseURL ?? super.responseURL
+      return this.__responseXHR?.responseURL ?? super.responseURL
     }
 
     get readyState() {
-      return this.#responseXHR?.readyState ?? super.readyState
+      return this.__responseXHR?.readyState ?? super.readyState
     }
 
     get responseText() {
       return (
-        this.#responseXHR?.__responseText ??
-        this.#responseXHR?.responseText ??
+        this.__responseXHR?.__responseText ??
+        this.__responseXHR?.responseText ??
         super.responseText
       )
     }
 
     get responseType() {
-      return this.#responseXHR?.responseType ?? super.responseType
+      return this.__responseXHR?.responseType ?? super.responseType
     }
     set responseType(value: XMLHttpRequestResponseType) {
       super.responseType = value
     }
 
-    #responseXHR?: XMLHttpRequest & {
+    private __responseXHR?: XMLHttpRequest & {
       __responseText?: string
     }
 
     async send(body?: Document | XMLHttpRequestBodyInit | null): Promise<void> {
-      this.#body = body
+      this.__body = body
 
       const origin = {
-        req: new Request(this.#url, {
-          method: this.#method,
-          headers: this.#headers,
-          body: this.#method === 'GET' ? null : (body as any),
+        req: new Request(this.__url, {
+          method: this.__method,
+          headers: this.__headers,
+          body: this.__method === 'GET' ? null : (body as any),
         }),
         res: new Response(),
       }
@@ -252,17 +252,17 @@ export const interceptXHR: Interceptor<FetchMiddleware> = function (
       }
       try {
         await handleRequest(c, [
-          ...CustomXHR.#middlewares,
-          this.#getMiddleware(origin),
+          ...CustomXHR.__middlewares,
+          this.__getMiddleware(origin),
         ])
       } catch (err) {
         if (err instanceof HTTPException) {
-          this.#responseXHR = await responseToXHR(
+          this.__responseXHR = await responseToXHR(
             err.getResponse(),
             this.responseType,
           )
         } else if (typeof err === 'string') {
-          this.#responseXHR = await responseToXHR(
+          this.__responseXHR = await responseToXHR(
             new Response(err, {
               status: 500,
               statusText: err,
@@ -270,12 +270,12 @@ export const interceptXHR: Interceptor<FetchMiddleware> = function (
             this.responseType,
           )
         } else if (err instanceof Error) {
-          this.#responseXHR = await responseToXHR(
+          this.__responseXHR = await responseToXHR(
             new Response(err.message, { status: 500 }),
             this.responseType,
           )
         } else {
-          this.#responseXHR = await responseToXHR(
+          this.__responseXHR = await responseToXHR(
             new Response(JSON.stringify(err), {
               status: 500,
               statusText: 'Internal Server Error',
@@ -283,7 +283,7 @@ export const interceptXHR: Interceptor<FetchMiddleware> = function (
             this.responseType,
           )
         }
-        this.#listeners
+        this.__listeners
           .filter(([type]) => type === 'error')
           .forEach(([_type, listener, _options]) => {
             listener.call(this, new ProgressEvent('error'))
@@ -291,14 +291,14 @@ export const interceptXHR: Interceptor<FetchMiddleware> = function (
         return
       }
       if (c.res !== origin.res) {
-        this.#responseXHR = await responseToXHR(c.res, this.responseType)
+        this.__responseXHR = await responseToXHR(c.res, this.responseType)
       }
-      const progressCallbacks = this.#listeners.filter(
+      const progressCallbacks = this.__listeners.filter(
         ([type]) => type === 'progress',
       )
       if (progressCallbacks.length > 0) {
         if (
-          this.#responseXHR?.response instanceof ReadableStream &&
+          this.__responseXHR?.response instanceof ReadableStream &&
           c.res.headers.get('Content-Type') === 'text/event-stream'
         ) {
           let responseText = ''
@@ -314,7 +314,7 @@ export const interceptXHR: Interceptor<FetchMiddleware> = function (
               lengthComputable: true,
               total: parseInt(c.res.headers.get('Content-Length') || '0', 10),
             })
-            this.#responseXHR.__responseText = responseText
+            this.__responseXHR.__responseText = responseText
             progressCallbacks.forEach(([_type, listener, _options]) => {
               listener.call(this, progressEvent)
             })
@@ -327,7 +327,7 @@ export const interceptXHR: Interceptor<FetchMiddleware> = function (
         }
       }
 
-      this.#listeners
+      this.__listeners
         .filter(([type]) =>
           ['load', 'loadend', 'readystatechange'].includes(type),
         )
@@ -336,25 +336,25 @@ export const interceptXHR: Interceptor<FetchMiddleware> = function (
         })
     }
 
-    #getMiddleware: (origin: {
+    private __getMiddleware: (origin: {
       req: Request
       res: Response
     }) => FetchMiddleware = (origin) => async (c) => {
       const openArgs: any[] = [c.req.method, c.req.url]
-      if (this.#async !== undefined) {
-        openArgs.push(this.#async)
+      if (this.__async !== undefined) {
+        openArgs.push(this.__async)
       }
-      if (this.#username !== undefined) {
-        openArgs.push(this.#username)
+      if (this.__username !== undefined) {
+        openArgs.push(this.__username)
       }
-      if (this.#password !== undefined) {
-        openArgs.push(this.#password)
+      if (this.__password !== undefined) {
+        openArgs.push(this.__password)
       }
       super.open.apply(this, openArgs as any)
       for (const [name, value] of c.req.headers.entries()) {
         super.setRequestHeader.apply(this, [name, value])
       }
-      this.#listeners
+      this.__listeners
         .filter(
           ([type]) =>
             ![
@@ -368,7 +368,7 @@ export const interceptXHR: Interceptor<FetchMiddleware> = function (
         .forEach(([type, listener, options]) => {
           super.addEventListener.apply(this, [type, listener as any, options])
         })
-      let sendBody = this.#body
+      let sendBody = this.__body
       if (c.req !== origin.req) {
         sendBody = c.req.body as any
       }
@@ -393,7 +393,7 @@ export const interceptXHR: Interceptor<FetchMiddleware> = function (
             if (this.readyState === XMLHttpRequest.DONE) {
               return
             }
-            this.#listeners
+            this.__listeners
               .filter(([type]) => type === 'readystatechange')
               .forEach(([_type, listener, _options]) => {
                 listener.call(this, ev as ProgressEvent)
@@ -405,7 +405,7 @@ export const interceptXHR: Interceptor<FetchMiddleware> = function (
         }
         // body is undefined when the request in Firefox 🤡
         else if (c.req === origin.req) {
-          super.send.apply(this, [this.#body])
+          super.send.apply(this, [this.__body])
         } else {
           super.send.apply(this)
         }
