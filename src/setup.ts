@@ -38,6 +38,15 @@ export async function setup(project: TestProject) {
         status: 204,
       })
     })
+    // Echo headers back as JSON
+    .get('/headers', (c) => {
+      return new Response(JSON.stringify(c.req.header()), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+    })
     .get('/sse', (c) => {
       const count = Number(c.req.query('count'))
       const sleep = c.req.query('sleep') ? Number(c.req.query('sleep')) : 10

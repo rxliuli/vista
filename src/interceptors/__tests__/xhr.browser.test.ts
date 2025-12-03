@@ -421,4 +421,30 @@ describe('interceptXHR', () => {
 
     unIntercept()
   })
+  it('should keep original headers but also include headers added in interceptors', async () => {
+    const unIntercept = interceptXHR([
+      async (c, next) => {
+        c.req.headers.set('X-Test-Header-2', 'test-value-2')
+        await next()
+
+        expect(c.req.headers.get('X-Test-Header')).toBe('test-value')
+        expect(c.req.headers.get('X-Test-Header-2')).toBe('test-value-2')
+      },
+    ])
+
+    const xhr = await new Promise<XMLHttpRequest>((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open('GET', `${inject('serverUrl')}/headers`)
+      xhr.setRequestHeader('X-Test-Header', 'test-value')
+      xhr.onload = () => resolve(xhr)
+      xhr.onerror = () => reject(xhr)
+      xhr.send('')
+    })
+    expect(JSON.parse(xhr.responseText)).toMatchObject({
+      'x-test-header': 'test-value',
+      'x-test-header-2': 'test-value-2',
+    })
+
+    unIntercept()
+  })
 })
