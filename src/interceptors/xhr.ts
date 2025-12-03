@@ -352,9 +352,9 @@ export const interceptXHR: Interceptor<FetchMiddleware> = function (
         openArgs.push(this.#password)
       }
       super.open.apply(this, openArgs as any)
-      Object.entries(this.#headers).forEach(([name, value]) => {
+      for (const [name, value] of c.req.headers.entries()) {
         super.setRequestHeader.apply(this, [name, value])
-      })
+      }
       this.#listeners
         .filter(
           ([type]) =>
