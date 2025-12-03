@@ -1,8 +1,7 @@
-import { Middleware } from '..'
 import { handleRequest } from '../context'
 import { HTTPException } from '../http-exception'
-import { Interceptor } from '../types'
-import { FetchContext, FetchMiddleware } from './fetch'
+import type { Interceptor } from '../types'
+import type { FetchContext, FetchMiddleware } from './fetch'
 
 function xhrToResponse(xhr: XMLHttpRequest) {
   const responseInit = {
@@ -101,7 +100,7 @@ function parseHeadersText(text: string) {
 }
 
 export const interceptXHR: Interceptor<FetchMiddleware> = function (
-  middlewares: Middleware[],
+  middlewares: FetchMiddleware[],
 ) {
   if (typeof XMLHttpRequest === 'undefined') {
     return () => {}
@@ -149,9 +148,9 @@ export const interceptXHR: Interceptor<FetchMiddleware> = function (
       }
     }
 
-    static #middlewares: Middleware[] = []
+    static #middlewares: FetchMiddleware[] = []
 
-    static middlewares(middlewares: Middleware[]) {
+    static middlewares(middlewares: FetchMiddleware[]) {
       CustomXHR.#middlewares = middlewares
     }
 
