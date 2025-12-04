@@ -447,4 +447,38 @@ describe('interceptXHR', () => {
 
     unIntercept()
   })
+  it('should emit loadend after all middlewares', async () => {
+    const testEnded = Promise.withResolvers<void>()
+
+    const status: string[] = []
+    const unIntercept = interceptXHR([
+      async (c, next) => {
+        status.push('middleware start')
+        await next()
+        await new Promise((r) => window.requestAnimationFrame(r))
+        status.push('middleware end')
+        testEnded.resolve()
+      },
+    ])
+
+    await new Promise<XMLHttpRequest>((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open('GET', `${inject('serverUrl')}/headers`)
+      xhr.onloadend = () => {
+        status.push('xhr loadend')
+        resolve(xhr)
+      }
+      xhr.onerror = () => reject(xhr)
+      xhr.send('')
+    })
+
+    await testEnded.promise
+    expect(status).toEqual([
+      'middleware start',
+      'middleware end',
+      'xhr loadend',
+    ])
+
+    unIntercept()
+  })
 })
