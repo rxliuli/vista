@@ -189,6 +189,9 @@ export const interceptXHR: Interceptor<FetchMiddleware> = function (
     set onload(callback: (this: XMLHttpRequest, ev: ProgressEvent) => any) {
       this.#listeners.push(['load', callback, false])
     }
+    set onloadend(callback: (this: XMLHttpRequest, ev: ProgressEvent) => any) {
+      this.#listeners.push(['loadend', callback, false])
+    }
     set onerror(callback: (this: XMLHttpRequest, ev: ProgressEvent) => any) {
       this.#listeners.push(['error', callback, false])
     }
