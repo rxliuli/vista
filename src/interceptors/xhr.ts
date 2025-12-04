@@ -371,11 +371,7 @@ export const interceptXHR: Interceptor<FetchMiddleware> = function (
         .forEach(([type, listener, options]) => {
           super.addEventListener.apply(this, [type, listener as any, options])
         })
-      let sendBody = this.#body
-      if (c.req !== origin.req) {
-        sendBody = c.req.body as any
-      }
-      await new Promise<void>((resolve, reject) => {
+      await new Promise<void>(async (resolve, reject) => {
         super.addEventListener.apply(this, [
           'load',
           (_ev) => {
@@ -403,14 +399,15 @@ export const interceptXHR: Interceptor<FetchMiddleware> = function (
               })
           },
         ])
-        if (c.req.body) {
-          super.send.apply(this, [sendBody])
-        }
-        // body is undefined when the request in Firefox 🤡
-        else if (c.req === origin.req) {
+        if (c.req === origin.req) {
           super.send.apply(this, [this.#body])
         } else {
-          super.send.apply(this)
+          if (c.req.body) {
+            super.send.apply(this, [c.req.body as any])
+          } else {
+            // Firefox does not yet implement ReadableStream in XHR body (https://bugzilla.mozilla.org/show_bug.cgi?id=1387483)
+            super.send.apply(this, [await c.req.clone().arrayBuffer()])
+          }
         }
       })
     }
