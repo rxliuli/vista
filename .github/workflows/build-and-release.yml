@@ -43,15 +43,12 @@ jobs:
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org/
-          scope: '@rxliuli'
           cache: 'pnpm'
+      - name: Update npm
+        run: npm install -g npm@latest
       - name: Install dependencies
         run: pnpm install
       - name: Build
-        run: |
-          pnpm build
+        run: pnpm build
       - name: Publish to npm
-        run: |
-          npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: pnpm publish --access public
