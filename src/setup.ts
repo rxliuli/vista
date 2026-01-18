@@ -63,6 +63,19 @@ export async function setup(project: TestProject) {
         }
       })
     })
+    .post('/upload', async (c) => {
+      const boundary = c.req
+        .header('Content-Type')
+        ?.slice('multipart/form-data; boundary='.length)
+      if (!boundary) {
+        return c.text('No boundary found', 400)
+      }
+      const body = await c.req.text()
+      if (!body.includes(boundary)) {
+        return c.text('Invalid multipart/form-data', 400)
+      }
+      return c.text(body)
+    })
 
   project.provide('serverUrl', `http://localhost:${port}`)
   server = serve({ ...app, port }, (info) => {

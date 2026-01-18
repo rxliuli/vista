@@ -481,4 +481,28 @@ describe('interceptXHR', () => {
 
     unIntercept()
   })
+  it('should not modify content-type when it is multipart/form-data', async () => {
+    const unIntercept = interceptXHR([
+      async (c, next) => {
+        await next()
+      },
+    ])
+
+    const formData = new FormData()
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', `${inject('serverUrl')}/upload`)
+    formData.append(
+      'file',
+      new Blob(['file content'], { type: 'text/plain' }),
+      'test.txt',
+    )
+    const xhrResult = await new Promise<XMLHttpRequest>((resolve, reject) => {
+      xhr.onload = () => resolve(xhr)
+      xhr.onerror = () => reject(xhr)
+      xhr.send(formData)
+    })
+    expect(xhrResult.status).eq(200)
+
+    unIntercept()
+  }, 1000)
 })

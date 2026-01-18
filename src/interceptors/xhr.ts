@@ -92,11 +92,14 @@ function parseHeadersText(text: string) {
   return text
     .split('\r\n')
     .filter((header) => header)
-    .reduce((acc, current) => {
-      const [key, value] = current.split(': ')
-      acc[key] = value
-      return acc
-    }, {} as Record<string, string>)
+    .reduce(
+      (acc, current) => {
+        const [key, value] = current.split(': ')
+        acc[key] = value
+        return acc
+      },
+      {} as Record<string, string>,
+    )
 }
 
 export const interceptXHR: Interceptor<FetchMiddleware> = function (
@@ -355,6 +358,13 @@ export const interceptXHR: Interceptor<FetchMiddleware> = function (
       }
       super.open.apply(this, openArgs as any)
       for (const [name, value] of c.req.headers.entries()) {
+        if (
+          name === 'content-type' &&
+          value.startsWith('multipart/form-data; boundary=')
+        ) {
+          // skip setting content-type to let the browser set it with correct boundary
+          continue
+        }
         super.setRequestHeader.apply(this, [name, value])
       }
       this.#listeners
