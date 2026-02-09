@@ -383,7 +383,7 @@ export const interceptXHR: Interceptor<FetchMiddleware> = function (
         })
       let sendBody = this.#body
       if (c.req !== origin.req) {
-        sendBody = c.req.body as any
+        sendBody = (await c.req.blob()) as any
       }
       await new Promise<void>((resolve, reject) => {
         super.addEventListener.apply(this, [
@@ -413,14 +413,14 @@ export const interceptXHR: Interceptor<FetchMiddleware> = function (
               })
           },
         ])
-        if (c.req.body) {
+        if (c.req !== origin.req) {
           super.send.apply(this, [sendBody])
+        } else if (c.req.body) {
+          super.send.apply(this, [this.#body])
         }
         // body is undefined when the request in Firefox 🤡
-        else if (c.req === origin.req) {
+        else {
           super.send.apply(this, [this.#body])
-        } else {
-          super.send.apply(this)
         }
       })
     }

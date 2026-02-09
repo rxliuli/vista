@@ -12,6 +12,7 @@ describe('interceptXHR', () => {
     options?: {
       method?: string
       responseType?: XMLHttpRequestResponseType
+      body?: any
     },
   ) {
     return new Promise<XMLHttpRequest>((resolve, reject) => {
@@ -20,7 +21,7 @@ describe('interceptXHR', () => {
       xhr.responseType = options?.responseType ?? 'text'
       xhr.onload = () => resolve(xhr)
       xhr.onerror = () => reject(xhr)
-      xhr.send()
+      xhr.send(options?.body)
     })
   }
 
@@ -54,6 +55,30 @@ describe('interceptXHR', () => {
     const xhr = await request('https://jsonplaceholder.typicode.com/todos/1')
     const r = JSON.parse(xhr.responseText)
     expect(r.id).toBe(2)
+    expect(spy).toBeCalledTimes(1)
+    unIntercept()
+  })
+  it('modify post url', async () => {
+    const serverUrl = inject('serverUrl')
+    const spy = vi.spyOn(XMLHttpRequest.prototype, 'open')
+    const unIntercept = interceptXHR([
+      async (c, next) => {
+        c.req = new Request(`${serverUrl}/echo`, {
+          method: c.req.method,
+          headers: c.req.headers,
+          body: await c.req.text(),
+          duplex: 'half', // for ReadableStream body
+        } as RequestInit)
+        await next()
+      },
+    ])
+    const xhr = await request(`${serverUrl}/todos/1`, {
+      method: 'POST',
+      body: 'hello',
+    })
+    const r = JSON.parse(xhr.responseText)
+    expect(spy.mock.calls[0][1] as string).toBe(`${serverUrl}/echo`)
+    expect(r.echo).toBe('hello')
     expect(spy).toBeCalledTimes(1)
     unIntercept()
   })

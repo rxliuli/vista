@@ -53,6 +53,31 @@ describe('interceptFetch', () => {
     expect(spy).toBeCalledTimes(1)
     unIntercept()
   })
+  it('modify post url', async () => {
+    const serverUrl = inject('serverUrl')
+    const spy = vi.spyOn(globalThis, 'fetch')
+    const unIntercept = interceptFetch([
+      async (c, next) => {
+        c.req = new Request(`${serverUrl}/echo`, {
+          method: c.req.method,
+          headers: c.req.headers,
+          body: await c.req.text(),
+          duplex: 'half', // for ReadableStream body
+        } as RequestInit)
+        await next()
+      },
+    ])
+    const r = await (
+      await fetch(`${serverUrl}/todos/1`, {
+        method: 'POST',
+        body: 'hello',
+      })
+    ).json()
+    expect((spy.mock.calls[0][0] as Request).url).toBe(`${serverUrl}/echo`)
+    expect(r.echo).toBe('hello')
+    expect(spy).toBeCalledTimes(1)
+    unIntercept()
+  })
   it('modify response', async () => {
     const spy = vi.spyOn(globalThis, 'fetch')
     const unIntercept = interceptFetch([

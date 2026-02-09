@@ -63,6 +63,10 @@ export async function setup(project: TestProject) {
         }
       })
     })
+    .post('/echo', async (c) => {
+      const body = await c.req.text()
+      return c.json({ echo: body })
+    })
     .post('/upload', async (c) => {
       const boundary = c.req
         .header('Content-Type')

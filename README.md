@@ -93,6 +93,26 @@ new Vista([interceptFetch, interceptXHR])
   .intercept()
 ```
 
+### Modify POST request URL
+
+```ts
+new Vista([interceptFetch, interceptXHR])
+  .use(async (c, next) => {
+    if (c.req.method === 'POST' && c.req.url.includes('/old-endpoint')) {
+      c.req = new Request('https://example.com/new-endpoint', {
+        method: c.req.method,
+        headers: c.req.headers,
+        body: await c.req.text(),
+        duplex: 'half',
+      } as RequestInit)
+    }
+    await next()
+  })
+  .intercept()
+```
+
+> **Note**: When modifying a POST request URL, you need to read the body with `await c.req.text()` and set `duplex: 'half'` to properly transfer the request body.
+
 ### Request Result Cache
 
 ```ts
