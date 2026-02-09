@@ -1,7 +1,7 @@
 import { handleRequest } from '../context'
 import { HTTPException } from '../http-exception'
 import type { Interceptor } from '../types'
-import type { FetchContext, FetchMiddleware } from './fetch'
+import { getGlobalThis, type FetchContext, type FetchMiddleware } from './fetch'
 
 function xhrToResponse(xhr: XMLHttpRequest) {
   const responseInit = {
@@ -108,7 +108,7 @@ export const interceptXHR: Interceptor<FetchMiddleware> = function (
   if (typeof XMLHttpRequest === 'undefined') {
     return () => {}
   }
-  class CustomXHR extends globalThis.XMLHttpRequest {
+  class CustomXHR extends getGlobalThis().XMLHttpRequest {
     #method: string = ''
     #url: string | URL = ''
     #async?: boolean
@@ -425,11 +425,11 @@ export const interceptXHR: Interceptor<FetchMiddleware> = function (
       })
     }
   }
-  const pureXHR = globalThis.XMLHttpRequest
-  globalThis.XMLHttpRequest = CustomXHR
+  const pureXHR = getGlobalThis().XMLHttpRequest
+  getGlobalThis().XMLHttpRequest = CustomXHR
   CustomXHR.middlewares(middlewares)
 
   return () => {
-    globalThis.XMLHttpRequest = pureXHR
+    getGlobalThis().XMLHttpRequest = pureXHR
   }
 }

@@ -15,11 +15,20 @@ export interface FetchMiddleware {
   (c: FetchContext, next: () => Promise<void>): void | Promise<void>
 }
 
+export function getGlobalThis(): typeof globalThis {
+  // @ts-expect-error
+  if (typeof unsafeWindow !== 'undefined') {
+    // @ts-expect-error
+    return unsafeWindow
+  }
+  return globalThis
+}
+
 export const interceptFetch: Interceptor<FetchMiddleware> = function (
   middlewares: FetchMiddleware[],
 ) {
-  const pureFetch = globalThis.fetch
-  globalThis.fetch = async (input, init) => {
+  const pureFetch = getGlobalThis().fetch
+  getGlobalThis().fetch = async (input, init) => {
     const c: FetchContext = {
       req: new Request(input, init),
       res: new Response(),
@@ -42,6 +51,6 @@ export const interceptFetch: Interceptor<FetchMiddleware> = function (
   }
 
   return () => {
-    globalThis.fetch = pureFetch
+    getGlobalThis().fetch = pureFetch
   }
 }

@@ -12,7 +12,7 @@ A powerful homogeneous request interception library that supports unified interc
 - 💫 Support interventions before and after requests
 - 🔄 Modifiable request and response data
 - 📦 Zero dependency, compact size
-- 🌐 Supports browser/node environment
+- 🌐 Supports browser extension and userscript environments
 - 🔄 Modifiable stream response
 
 ## Installation
@@ -40,6 +40,8 @@ For userscripts (Tampermonkey/Greasemonkey):
 ```
 
 > **Note**: If uploading to Greasyfork, replace `@latest` with a specific version number.
+
+Vista automatically detects the userscript environment and uses `unsafeWindow` to intercept page-level requests, so no additional configuration is needed.
 
 ## Basic Usage
 
