@@ -530,4 +530,25 @@ describe('interceptXHR', () => {
 
     unIntercept()
   }, 1000)
+  // regression test for the missing ReadableStream support of Firefox
+  it('can update body of request', async () => {
+    const spy = vi.spyOn(XMLHttpRequest.prototype, 'send')
+    const unIntercept = interceptXHR([
+      async (c, next) => {
+        c.req = new Request(c.req, {
+          body: new Uint8Array([116, 101, 115, 116]), // 'test' in uint8array
+        })
+        await next()
+      },
+    ])
+
+    const { promise, resolve } = Promise.withResolvers<string>()
+    const xhr = new XMLHttpRequest()
+    xhr.onloadend = () => resolve(xhr.responseText)
+    xhr.open('PUT', `${inject('serverUrl')}/echo`)
+    xhr.send('hello')
+
+    expect(await promise).toBe('test') // the body should be updated to 'test'
+    unIntercept()
+  })
 })
