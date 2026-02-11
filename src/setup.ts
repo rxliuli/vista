@@ -47,6 +47,10 @@ export async function setup(project: TestProject) {
         },
       })
     })
+    .put('/echo', async (c) => {
+      const body = await c.req.text()
+      return c.text(body)
+    })
     .get('/sse', (c) => {
       const count = Number(c.req.query('count'))
       const sleep = c.req.query('sleep') ? Number(c.req.query('sleep')) : 10
