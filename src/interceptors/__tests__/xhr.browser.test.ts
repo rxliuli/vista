@@ -532,7 +532,6 @@ describe('interceptXHR', () => {
   }, 1000)
   // regression test for the missing ReadableStream support of Firefox
   it('can update body of request', async () => {
-    const spy = vi.spyOn(XMLHttpRequest.prototype, 'send')
     const unIntercept = interceptXHR([
       async (c, next) => {
         c.req = new Request(c.req, {
