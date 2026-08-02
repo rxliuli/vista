@@ -452,6 +452,17 @@ export const interceptXHR: Interceptor<FetchMiddleware> = function (
         super.addEventListener.apply(this, [
           'load',
           (_ev) => {
+            // A load whose status is outside Response's [200, 599] range
+            // (0 in practice: request blocked by another extension, killed
+            // with its iframe, or an upstream wrapper faking `load`) carries
+            // no HTTP response to model — treat it as a network error
+            // instead of letting `new Response(..., { status: 0 })` throw
+            // uncaught and leave the request hanging.
+            const status: number = super.status
+            if (status < 200 || status > 599) {
+              reject(new Error(status + ' ' + super.statusText))
+              return
+            }
             c.res = this.#buildResponseFromSuper()
             origin.res = c.res
             resolve()

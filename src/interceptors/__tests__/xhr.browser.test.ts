@@ -646,4 +646,88 @@ describe('interceptXHR', () => {
       unIntercept()
     }
   })
+  // regression test: a `load` event with status 0 (request blocked by another
+  // extension, killed with its iframe, or an upstream XHR wrapper faking
+  // `load`) carries no HTTP response, and `new Response(..., { status: 0 })`
+  // throws RangeError. It must be routed to the error path instead of
+  // crashing uncaught and leaving the request hanging forever.
+  it('routes load with status 0 to the error path instead of throwing', async () => {
+    const RealXHR = globalThis.XMLHttpRequest
+
+    // Mimics an upstream XMLHttpRequest that fires `load` while its status
+    // reads 0. Getters live on the prototype so vista's `super.*` reads work.
+    class NetworkFailureXHR extends EventTarget {
+      static UNSENT = 0
+      static OPENED = 1
+      static HEADERS_RECEIVED = 2
+      static LOADING = 3
+      static DONE = 4
+      get status() {
+        return 0
+      }
+      get statusText() {
+        return ''
+      }
+      get responseType() {
+        return '' as XMLHttpRequestResponseType
+      }
+      get response() {
+        return ''
+      }
+      get responseText() {
+        return ''
+      }
+      get readyState() {
+        return 4
+      }
+      open() {}
+      setRequestHeader() {}
+      getAllResponseHeaders() {
+        return ''
+      }
+      getResponseHeader() {
+        return null
+      }
+      abort() {}
+      send() {
+        queueMicrotask(() => {
+          this.dispatchEvent(new ProgressEvent('load'))
+          this.dispatchEvent(new ProgressEvent('loadend'))
+        })
+      }
+    }
+    globalThis.XMLHttpRequest = NetworkFailureXHR as any
+
+    const unIntercept = interceptXHR([
+      async (_c, next) => {
+        await next()
+      },
+    ])
+
+    const uncaught: unknown[] = []
+    const onUncaught = (e: ErrorEvent) => {
+      uncaught.push(e.error)
+      e.preventDefault()
+    }
+    window.addEventListener('error', onUncaught)
+    try {
+      const outcome = new Promise<string>((resolve) => {
+        const xhr = new XMLHttpRequest()
+        xhr.open('GET', 'https://example.com/blocked')
+        xhr.onload = () => resolve('load')
+        xhr.onerror = () => resolve('error')
+        xhr.send()
+      })
+      const result = await Promise.race([
+        outcome,
+        new Promise<string>((r) => setTimeout(() => r('hang'), 500)),
+      ])
+      expect(result).toBe('error')
+      expect(uncaught).toEqual([])
+    } finally {
+      window.removeEventListener('error', onUncaught)
+      unIntercept()
+      globalThis.XMLHttpRequest = RealXHR
+    }
+  })
 })
